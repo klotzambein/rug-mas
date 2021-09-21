@@ -1,65 +1,84 @@
-#[derive(Debug, Clone)]
-pub struct GenoaMarket {
-    price_history: Vec<f32>,
-    volatility: f32,
-    buy_orders: Vec<GenoaBuyOrder>,
-    sell_orders: Vec<GenoaSellOrder>,
+use std::{error::Error, path::PathBuf};
+
+use clap::{AppSettings, Clap};
+use config::Config;
+use simulation::Simulation;
+use toml::to_string_pretty;
+
+pub mod agent;
+pub mod config;
+pub mod market;
+pub mod simulation;
+pub mod report;
+
+/// Application to investigate market behaviour in gossiping agents.
+#[derive(Clap)]
+#[clap(version = "0.1", author = "Robin Kock <contact@robin-kock.com>")]
+#[clap(setting = AppSettings::ColoredHelp)]
+struct Opts {
+    #[clap(subcommand)]
+    subcmd: SubCommand,
 }
 
-impl GenoaMarket {
-    pub fn new(initial_price: f32) -> GenoaMarket {
-        GenoaMarket {
-            price_history: vec![initial_price],
-            volatility: 0.0,
-            buy_orders: Vec::new(),
-            sell_orders: Vec::new(),
+#[derive(Clap)]
+enum SubCommand {
+    Run(RunCommand),
+    WriteConfig(WriteConfigCommand),
+}
+
+/// Run a simulation.
+#[derive(Clap)]
+#[clap(setting = AppSettings::ColoredHelp)]
+struct RunCommand {
+    /// Path to configuration file. Default configuration can be written to a
+    /// file using 'rug-mas write-config ./default.toml'
+    #[clap(short, long)]
+    config: Option<PathBuf>,
+
+    /// The length of each simulation run in steps.
+    #[clap(short = 'n', long, default_value = "100000")]
+    run_length: u32,
+
+    /// The length of each simulation run in steps.
+    #[clap(short, long, default_value = "1")]
+    repetitons: u32,
+}
+
+/// Export the default configuration.
+#[derive(Clap)]
+#[clap(setting = AppSettings::ColoredHelp)]
+struct WriteConfigCommand {
+    /// Path to new configuration file.
+    config: PathBuf,
+}
+
+fn main() -> Result<(), Box<dyn Error>> {
+    let args = Opts::parse();
+
+    match args.subcmd {
+        SubCommand::Run(rc) => run_simulation(rc),
+        SubCommand::WriteConfig(wc) => write_config(wc),
+    }
+}
+
+fn write_config(cmd: WriteConfigCommand) -> Result<(), Box<dyn Error>> {
+    let config = to_string_pretty(&Config::default())?;
+    std::fs::write(cmd.config, &config)?;
+    Ok(())
+}
+
+fn run_simulation(cmd: RunCommand) -> Result<(), Box<dyn Error>> {
+    let config = cmd
+        .config
+        .map(Config::load)
+        .unwrap_or_else(|| Ok(Config::default()))?;
+
+    for _run_index in 0..cmd.repetitons {
+        let mut sim = Simulation::new(&config);
+        for _step in 0..cmd.run_length {
+            sim.step();
         }
     }
-
-    /// Call this after all orders have been submitted, this will execute orders, as well as
-    /// computing a new price and volatility.
-    pub fn step(&mut self) {
-        self.buy_orders.sort_by(|a, b| b.limit_price.partial_cmp(&a.limit_price).unwrap());
-        self.sell_orders.sort_by(|a, b| a.limit_price.partial_cmp(&b.limit_price).unwrap());
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct GenoaBuyOrder {
-    agent: AgentId,
-    asset_quantity: u32,
-    limit_price: f32,
-}
-
-#[derive(Debug, Clone)]
-pub struct GenoaSellOrder {
-    agent: AgentId,
-    asset_quantity: u32,
-    limit_price: f32,
-}
-
-type AgentId = u32;
-
-fn main() {
-    println!("Hello, world!");
-}
-
-#[cfg(test)]
-pub mod test {
-    use super::*;
-
-    #[test]
-    fn test_genoa_market_step() {
-        let mut market = GenoaMarket::new(1.);
-        market.sell_orders.push(GenoaSellOrder { agent: 0, asset_quantity: 2, limit_price: 0.9 });
-        market.sell_orders.push(GenoaSellOrder { agent: 1, asset_quantity: 8, limit_price: 0.95 });
-        market.sell_orders.push(GenoaSellOrder { agent: 2, asset_quantity: 1, limit_price: 0.8 });
-        market.buy_orders.push(GenoaBuyOrder { agent: 3, asset_quantity: 2, limit_price: 1.1 });
-        market.buy_orders.push(GenoaBuyOrder { agent: 4, asset_quantity: 2, limit_price: 1.15 });
-        market.buy_orders.push(GenoaBuyOrder { agent: 5, asset_quantity: 5, limit_price: 1.05 });
-        println!("{:?}", &market);
-        market.step();
-        println!("{:?}", &market);
-        panic!();
-    }
+    
+    Ok(())
 }
