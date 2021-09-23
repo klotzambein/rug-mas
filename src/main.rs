@@ -2,7 +2,8 @@ use std::{error::Error, path::PathBuf};
 
 use clap::{AppSettings, Clap};
 use config::Config;
-use report::SteppedReporter;
+use plotters::prelude::{IntoDrawingArea, SVGBackend};
+use report::Reporter;
 use simulation::Simulation;
 use toml::to_string_pretty;
 
@@ -75,12 +76,15 @@ fn run_simulation(cmd: RunCommand) -> Result<(), Box<dyn Error>> {
         .unwrap_or_else(|| Ok(Config::default()))?;
 
     for _run_index in 0..cmd.repetitons {
-        let reporter = SteppedReporter::new();
+        let mut reporter = Reporter::new();
         let mut sim = Simulation::new(&config);
-        for _step in 0..cmd.run_length {
-            sim.step();
+        for step in 0..cmd.run_length {
+            reporter.set_step(step);
+            sim.step(step, &mut reporter);
         }
+        reporter.render_chart(SVGBackend::new("plot.svg", (1024, 512)).into_drawing_area());
     }
+
 
     Ok(())
 }
