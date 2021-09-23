@@ -2,14 +2,15 @@ use std::{error::Error, path::PathBuf};
 
 use clap::{AppSettings, Clap};
 use config::Config;
+use report::SteppedReporter;
 use simulation::Simulation;
 use toml::to_string_pretty;
 
 pub mod agent;
 pub mod config;
 pub mod market;
-pub mod simulation;
 pub mod report;
+pub mod simulation;
 
 /// Application to investigate market behaviour in gossiping agents.
 #[derive(Clap)]
@@ -74,11 +75,12 @@ fn run_simulation(cmd: RunCommand) -> Result<(), Box<dyn Error>> {
         .unwrap_or_else(|| Ok(Config::default()))?;
 
     for _run_index in 0..cmd.repetitons {
+        let reporter = SteppedReporter::new();
         let mut sim = Simulation::new(&config);
         for _step in 0..cmd.run_length {
             sim.step();
         }
     }
-    
+
     Ok(())
 }
