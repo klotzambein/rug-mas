@@ -58,7 +58,9 @@ impl AgentCollection {
         &mut self.agents[id as usize]
     }
 
-    pub fn assign_states(&mut self, &agent: Agent) {
+    pub fn assign_states(&mut self) {
+        // Every agent updates their beliefs based on other agents' interests,
+        // overall profits from a market and other random factors.
         todo!()
     }
 }
