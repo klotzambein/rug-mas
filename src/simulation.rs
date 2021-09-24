@@ -1,5 +1,5 @@
 use crate::{
-    agent::Agent,
+    agent::AgentCollection,
     config::Config,
     market::GenoaMarket,
     report::{report, Reporter},
@@ -8,20 +8,19 @@ use crate::{
 #[derive(Debug, Clone)]
 pub struct Simulation {
     market: GenoaMarket,
-    agents: Vec<Agent>,
+    agents: AgentCollection,
 }
 
 impl Simulation {
     pub fn new(config: &Config) -> Simulation {
         Simulation {
-            market: GenoaMarket::new(100.0),
-            agents: std::iter::repeat(Agent::new())
-                .take(config.agent_count)
-                .collect(),
+            market: GenoaMarket::new(config),
+            agents: AgentCollection::new(config),
         }
     }
 
     pub fn step(&mut self, step: u32, reporter: &mut Reporter) {
         report!(reporter, "step", step.into());
+        self.market.step();
     }
 }
