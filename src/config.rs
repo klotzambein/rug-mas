@@ -7,6 +7,7 @@ use toml::from_str;
 pub struct Config {
     pub agent_count: usize,
     pub market: MarketConfig,
+    pub agent: AgentConfig,
 }
 
 impl Config {
@@ -21,6 +22,7 @@ impl Default for Config {
         Self {
             agent_count: 1000,
             market: MarketConfig::default(),
+            agent: AgentConfig::default(),
         }
     }
 }
@@ -36,6 +38,19 @@ impl Default for MarketConfig {
         Self {
             initial_price: 100.0,
             price_history_count: 20,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct AgentConfig {
+    pub initial_cash: f32,
+}
+
+impl Default for AgentConfig {
+    fn default() -> Self {
+        Self {
+            initial_cash: 100.0,
         }
     }
 }

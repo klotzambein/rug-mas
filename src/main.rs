@@ -38,7 +38,7 @@ struct RunCommand {
     config: Option<PathBuf>,
 
     /// The length of each simulation run in steps.
-    #[clap(short = 'n', long, default_value = "100000")]
+    #[clap(short = 'n', long, default_value = "10000")]
     run_length: u32,
 
     /// The length of each simulation run in steps.
