@@ -28,12 +28,14 @@ impl Default for Config {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct MarketConfig {
     pub initial_price: f32,
+    pub price_history_count: usize,
 }
 
 impl Default for MarketConfig {
     fn default() -> Self {
         Self {
             initial_price: 100.0,
+            price_history_count: 20,
         }
     }
 }

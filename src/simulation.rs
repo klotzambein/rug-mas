@@ -21,6 +21,6 @@ impl Simulation {
 
     pub fn step(&mut self, step: u32, reporter: &mut Reporter) {
         report!(reporter, "step", step.into());
-        self.market.step();
+        self.market.step(&mut self.agents);
     }
 }
