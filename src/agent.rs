@@ -1,17 +1,30 @@
+/*
+TODO: The interest vector is initially random. At every time step, the agents increase or decrease the 
+interest in a market based on other agents' (close in the network) beliefs, overall profits from that 
+asset, and other news (random noise in our case).
+TODO: Fundamentalists? From the DGA paper.
+*/
+
 use crate::config::Config;
 
 pub type AgentId = u32;
 
 #[derive(Debug, Clone)]
 pub struct Agent {
-    state: i32,
     cash: f32,
-    assets: Vec<u32>,
+    belief_state: u32,
+    assets: Vec<u32>, // Vector representing the ammount of assets an agent holds.
+    interest_prob_vector: Vec<f32>, // Vector encapsulating each market preference of an agent. Contains probabilities between [0, 1].
 }
 
 impl Agent {
     pub fn new() -> Agent {
-        Agent {}
+        Agent {
+            cash: 0.0,
+            belief_state: 0,
+            assets: vec![0, 0, 0],
+            interest_prob_vector: vec![0.0, 0.0, 0.0],
+        }
     }
 
     pub fn buy(&mut self, asset_quantity: u32, price: f32) {
@@ -43,5 +56,9 @@ impl AgentCollection {
 
     pub fn agent_mut(&mut self, id: AgentId) -> &mut Agent {
         &mut self.agents[id as usize]
+    }
+
+    pub fn assign_states(&mut self, &agent: Agent) {
+        todo!()
     }
 }
