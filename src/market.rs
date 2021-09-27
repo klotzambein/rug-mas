@@ -51,18 +51,16 @@ impl GenoaMarket {
     }
 
     fn compute_volatility(&mut self) {
-        if self.price_history.len() < 3 {
+        if self.price_history.len() < 20 {
             // We need at least thre values to compute the log returns
             return;
         }
 
-        let num_log_returns = (self.price_history.len() - 1) as f32;
+        let num_log_returns = 20.0;
 
-        let log_returns = self
-            .price_history
-            .iter()
-            .zip(self.price_history.iter().skip(1))
-            .map(|(n, np1)| (np1 / n).log10());
+        let log_returns = self.price_history.iter().rev().take(20).rev()
+            .zip(self.price_history.iter().rev().take(20).rev().skip(1))
+            .map(|(n, np1)| np1.ln() - n.ln());
 
         let log_return_average = log_returns.clone().sum::<f32>() / num_log_returns;
         // println!(
@@ -84,6 +82,7 @@ impl GenoaMarket {
             .sqrt();
 
         self.volatility = volatility;
+        println!("{}", volatility);
     }
 
     /// This function assumes thath the orders are sortet
