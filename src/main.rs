@@ -2,7 +2,7 @@ use std::{error::Error, path::PathBuf};
 
 use clap::{AppSettings, Clap};
 use config::Config;
-use plotters::prelude::{IntoDrawingArea, SVGBackend};
+use plotters::{prelude::{BitMapBackend, IntoDrawingArea}, style::WHITE};
 use report::Reporter;
 use simulation::Simulation;
 use toml::to_string_pretty;
@@ -82,9 +82,10 @@ fn run_simulation(cmd: RunCommand) -> Result<(), Box<dyn Error>> {
             reporter.set_step(step);
             sim.step(step, &mut reporter);
         }
-        reporter.render_chart(SVGBackend::new("plot.svg", (1024, 512)).into_drawing_area());
+        let drawing_area = BitMapBackend::new("plot.png", (1024, 512)).into_drawing_area();
+        drawing_area.fill(&WHITE).expect("Can't fill bitmap");
+        reporter.render_chart(drawing_area);
     }
-
 
     Ok(())
 }

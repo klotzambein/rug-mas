@@ -54,6 +54,7 @@ impl Reporter {
     }
 
     pub fn report_num(&mut self, target: ReporterTarget, value: f64) {
+        println!("{:?} => {}", target.description, value);
         let vec = self.per_step.entry(target).or_default();
         match vec.len().cmp(&self.current_step) {
             Ordering::Equal => vec.push(value),

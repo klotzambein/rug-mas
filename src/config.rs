@@ -20,7 +20,7 @@ impl Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            agent_count: 1000,
+            agent_count: 100,
             market: MarketConfig::default(),
             agent: AgentConfig::default(),
         }
@@ -50,7 +50,7 @@ pub struct AgentConfig {
 impl Default for AgentConfig {
     fn default() -> Self {
         Self {
-            initial_cash: 100.0,
+            initial_cash: 30000.0,
         }
     }
 }

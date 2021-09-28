@@ -1,5 +1,9 @@
-use std::{array::IntoIter, cmp::Ordering, collections::VecDeque, ops::Div};
+use std::{array::IntoIter, cmp::Ordering, collections::VecDeque, ops::Div, path::Path};
 
+use plotters::{
+    prelude::{BitMapBackend, ChartBuilder, IntoDrawingArea, LineSeries, PathElement},
+    style::{Color, IntoFont, BLACK, GREEN, RED, WHITE},
+};
 use rand::prelude::*;
 
 use crate::{
@@ -21,14 +25,18 @@ pub struct GenoaMarket {
 
 impl GenoaMarket {
     pub fn new(config: &Config, id: MarketId) -> GenoaMarket {
-        GenoaMarket {
+        let p = config.market.initial_price;
+        let mut m = GenoaMarket {
             id,
-            price_history: IntoIter::new([config.market.initial_price; 3]).collect(),
+            price_history: IntoIter::new([p * 0.99, p * 1.01, p]).collect(),
             price_history_count: config.market.price_history_count,
             volatility: 0.0,
             buy_orders: Vec::new(),
             sell_orders: Vec::new(),
-        }
+        };
+        m.compute_volatility();
+        println!("v: {}", m.volatility);
+        m
     }
 
     /// Call this after all orders have been submitted, this will execute orders, as well as
@@ -124,8 +132,62 @@ impl GenoaMarket {
         }
     }
 
+    pub fn plot_depth(&mut self, path: &impl AsRef<Path>) {
+        self.sort_orders();
+        let price = self.compute_price().unwrap().0;
+
+        let drawing_area = BitMapBackend::new(path, (1024, 512)).into_drawing_area();
+        drawing_area.fill(&WHITE).expect("Can't fill bitmap");
+
+        let mut chart = ChartBuilder::on(&drawing_area)
+            .caption("Simulation Report", ("sans-serif", 50).into_font())
+            .margin(25)
+            .x_label_area_size(30)
+            .y_label_area_size(30)
+            .build_cartesian_2d(-10f32..120f32, 0f32..10000f32)
+            .unwrap();
+
+        chart.configure_mesh().draw().unwrap();
+
+        chart
+            .draw_series(LineSeries::new(
+                self.sell_orders.iter().scan(0, |agg, so| {
+                    *agg += so.asset_quantity;
+                    Some((so.limit_price, *agg as f32))
+                }),
+                RED,
+            ))
+            .unwrap()
+            .label("sell depth")
+            .legend(move |(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], RED));
+        chart
+            .draw_series(LineSeries::new(
+                self.buy_orders.iter().scan(0, |agg, so| {
+                    *agg += so.asset_quantity;
+                    Some((so.limit_price, *agg as f32))
+                }),
+                GREEN,
+            ))
+            .unwrap()
+            .label("buy depth")
+            .legend(move |(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], GREEN));
+
+        chart
+            .draw_series(LineSeries::new([(price, 0.0), (price, 10000.0)], BLACK))
+            .unwrap()
+            .label("price")
+            .legend(move |(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], BLACK));
+
+        chart
+            .configure_series_labels()
+            .background_style(&WHITE.mix(0.8))
+            .border_style(&BLACK)
+            .draw()
+            .unwrap();
+    }
+
     /// This function assumes that the orders are sortet and does not record the price
-    fn compute_price(&mut self) -> Option<(f32, u32)> {
+    fn compute_price(&self) -> Option<(f32, u32)> {
         let mut bos = self.buy_orders.iter();
         let bo0 = bos.next()?;
         let mut bos_sum = bo0.asset_quantity;
@@ -161,6 +223,7 @@ impl GenoaMarket {
             }
         }
 
+        println!("{} - {}", bos_price, sos_price);
         let price = (bos_price + sos_price) / 2.0;
         let amount_executed = sos_sum.min(bos_sum);
 
@@ -201,7 +264,7 @@ impl GenoaMarket {
 
     pub fn buy_order(&mut self, agent: AgentId, cash_quantity: f32) {
         let limit_price = self.price()
-            / rand_distr::Normal::new(1.01, 3.5 * self.volatility)
+            * rand_distr::Normal::new(1.01, 3.5 * self.volatility)
                 .unwrap()
                 .sample(&mut rand::thread_rng());
         self.buy_orders.push(GenoaOrder {

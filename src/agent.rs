@@ -84,6 +84,14 @@ impl AgentCollection {
         }
     }
 
+    pub fn total_cash(&self) -> f64 {
+        self.agents.iter().map(|a| a.cash as f64).sum()
+    }
+
+    pub fn total_assets(&self, market: MarketId) -> u32 {
+        self.agents.iter().map(|a| a.assets[market as usize]).sum()
+    }
+
     pub fn assign_states(&mut self) {
         // Every agent updates their beliefs based on other agents' interests,
         // overall profits from a market and other random factors.
