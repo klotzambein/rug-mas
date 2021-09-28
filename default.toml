@@ -1,8 +1,0 @@
-agent_count = 1000
-
-[market]
-initial_price = 100.0
-price_history_count = 20
-
-[agent]
-initial_cash = 100.0

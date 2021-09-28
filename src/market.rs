@@ -23,7 +23,7 @@ impl GenoaMarket {
     pub fn new(config: &Config, id: MarketId) -> GenoaMarket {
         GenoaMarket {
             id,
-            price_history: IntoIter::new([config.market.initial_price]).collect(),
+            price_history: IntoIter::new([config.market.initial_price; 3]).collect(),
             price_history_count: config.market.price_history_count,
             volatility: 0.0,
             buy_orders: Vec::new(),
