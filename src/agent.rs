@@ -27,7 +27,7 @@ impl Agent {
         Agent {
             cash: config.agent.initial_cash,
             belief_state: 0,
-            assets: vec![0, 0, 0],
+            assets: vec![30, 30, 30],
             interest_prob_vector: vec![0.0, 0.0, 0.0],
         }
     }
@@ -79,6 +79,7 @@ impl AgentCollection {
                 market.buy_order(agent_id, agent.cash * random::<f32>());
             } else {
                 let assets_owned = agent.assets[market.id() as usize] as f32;
+
                 market.sell_order(agent_id, (assets_owned * random::<f32>()) as u32)
             }
         }

@@ -19,9 +19,9 @@ impl Simulation {
         }
     }
 
-    pub fn step(&mut self, step: u32, reporter: &mut Reporter) {
+    pub fn step(&mut self, _step: u32, reporter: &mut Reporter) {
         self.agents.step(&mut self.market);
-        self.market.plot_depth(&format!("depth_{}.png", step));
+        // self.market.plot_depth(&format!("depth_{}.png", step));
         self.market.step(&mut self.agents);
         report!(reporter, "price", self.market.price() as f64);
         report!(reporter, "volatility", self.market.volatility() as f64);

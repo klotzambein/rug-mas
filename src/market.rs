@@ -26,24 +26,20 @@ pub struct GenoaMarket {
 impl GenoaMarket {
     pub fn new(config: &Config, id: MarketId) -> GenoaMarket {
         let p = config.market.initial_price;
-        let mut m = GenoaMarket {
+        GenoaMarket {
             id,
-            price_history: IntoIter::new([p * 0.99, p * 1.01, p]).collect(),
+            price_history: IntoIter::new([p, p, p]).collect(),
             price_history_count: config.market.price_history_count,
             volatility: 0.0,
             buy_orders: Vec::new(),
             sell_orders: Vec::new(),
-        };
-        m.compute_volatility();
-        println!("v: {}", m.volatility);
-        m
+        }
     }
 
     /// Call this after all orders have been submitted, this will execute orders, as well as
     /// computing a new price and volatility.
     pub fn step(&mut self, agents: &mut AgentCollection) {
         self.sort_orders();
-        // println!("{:?}", (self.buy_orders.len(), self.sell_orders.len()));
 
         let (price, amount_executed) = self.compute_price().unwrap_or_else(|| (self.price(), 0));
 
@@ -73,14 +69,6 @@ impl GenoaMarket {
             .map(|(n, np1)| (np1 / n).log10());
 
         let log_return_average = log_returns.clone().sum::<f32>() / num_log_returns;
-        // println!(
-        //     "{:?}",
-        //     (
-        //         num_log_returns,
-        //         log_returns.clone().collect::<Vec<_>>(),
-        //         log_return_average
-        //     )
-        // );
 
         let volatility = log_returns
             .map(|r| {
@@ -193,7 +181,7 @@ impl GenoaMarket {
         let mut bos_sum = bo0.asset_quantity;
         let mut bos_price = bo0.limit_price;
 
-        let mut sos = self.buy_orders.iter();
+        let mut sos = self.sell_orders.iter();
         let so0 = sos.next()?;
         let mut sos_sum = so0.asset_quantity;
         let mut sos_price = so0.limit_price;
@@ -214,7 +202,7 @@ impl GenoaMarket {
                 }
                 Ordering::Equal | Ordering::Greater => {
                     let so = if let Some(s) = sos.next() { s } else { break };
-                    if bos_price < so.limit_price {
+                    if so.limit_price > bos_price {
                         break;
                     }
                     sos_sum += so.asset_quantity;
@@ -223,7 +211,6 @@ impl GenoaMarket {
             }
         }
 
-        println!("{} - {}", bos_price, sos_price);
         let price = (bos_price + sos_price) / 2.0;
         let amount_executed = sos_sum.min(bos_sum);
 
@@ -251,6 +238,9 @@ impl GenoaMarket {
     }
 
     pub fn sell_order(&mut self, agent: AgentId, asset_quantity: u32) {
+        if asset_quantity == 0 {
+            return;
+        }
         let limit_price = self.price()
             / rand_distr::Normal::new(1.01, 3.5 * self.volatility)
                 .unwrap()
@@ -263,6 +253,9 @@ impl GenoaMarket {
     }
 
     pub fn buy_order(&mut self, agent: AgentId, cash_quantity: f32) {
+        if cash_quantity < f32::EPSILON {
+            return;
+        }
         let limit_price = self.price()
             * rand_distr::Normal::new(1.01, 3.5 * self.volatility)
                 .unwrap()

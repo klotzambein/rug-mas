@@ -54,7 +54,6 @@ impl Reporter {
     }
 
     pub fn report_num(&mut self, target: ReporterTarget, value: f64) {
-        println!("{:?} => {}", target.description, value);
         let vec = self.per_step.entry(target).or_default();
         match vec.len().cmp(&self.current_step) {
             Ordering::Equal => vec.push(value),
@@ -66,56 +65,55 @@ impl Reporter {
         }
     }
 
-    pub fn render_chart<DB>(&self, db: DrawingArea<DB, Shift>)
+    pub fn render_chart<DA>(&self, da: DrawingArea<DA, Shift>)
     where
-        DB: DrawingBackend,
+        DA: DrawingBackend,
     {
-        let max_step = self
-            .per_step
-            .values()
-            .map(|v| v.len())
-            .max()
-            .expect("no values reported");
+        let chart_count = self.per_step.len();
+        let chart_width = (chart_count as f64).sqrt() as usize;
+        let chart_height = chart_count / chart_width + (chart_count % chart_width != 0) as usize;
+        let das = da.split_evenly((chart_width, chart_height));
 
-        let y_range = self
-            .per_step
-            .values()
-            .flatten()
-            .copied()
-            .filter(|v| !f64::is_nan(*v))
-            .map(|v| (v, v))
-            .reduce(|(c_min, c_max), (n_min, n_max)| (c_min.min(n_min), c_max.max(n_max)))
-            .expect("no values reported");
-
-        let mut chart = ChartBuilder::on(&db)
-            .caption("Simulation Report", ("sans-serif", 50).into_font())
-            .margin(25)
-            .x_label_area_size(30)
-            .y_label_area_size(30)
-            .build_cartesian_2d(0..max_step, y_range.0..y_range.1)
-            .unwrap();
-
-        chart.configure_mesh().draw().unwrap();
-
-        for (i, (target, series)) in self.per_step.iter().enumerate() {
+        for ((target, series), da) in self.per_step.iter().zip(das) {
             let label = target.to_string();
-            let color = Palette99::pick(i).to_rgba();
+            let color = BLACK;
+
+            let max_step = series.len();
+
+            let y_range = series
+                .iter()
+                .copied()
+                .filter(|v| !f64::is_nan(*v))
+                .map(|v| (v, v))
+                .reduce(|(c_min, c_max), (n_min, n_max)| (c_min.min(n_min), c_max.max(n_max)))
+                .expect("no values reported");
+
+            let mut chart = ChartBuilder::on(&da)
+                .caption(label, ("monospace", 25).into_font())
+                .margin(10).margin_top(0).margin_bottom(0)
+                .x_label_area_size(25)
+                .y_label_area_size(50)
+                .build_cartesian_2d(0..max_step, y_range.0..y_range.1)
+                .unwrap();
+
+            chart.configure_mesh().y_label_formatter(&|x| format!("{:2.2e}", x)).draw().unwrap();
+
             chart
                 .draw_series(LineSeries::new(
                     series.iter().enumerate().map(|(i, v)| (i, *v)),
                     color,
                 ))
-                .unwrap()
-                .label(label)
-                .legend(move |(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], color));
-        }
+                .unwrap();
+            //     .label(label)
+            //     .legend(move |(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], color));
 
-        chart
-            .configure_series_labels()
-            .background_style(&WHITE.mix(0.8))
-            .border_style(&BLACK)
-            .draw()
-            .unwrap();
+            // chart
+            //     .configure_series_labels()
+            //     .background_style(&WHITE.mix(0.8))
+            //     .border_style(&BLACK)
+            //     .draw()
+            //     .unwrap();
+        }
     }
 
     pub fn write_csv(&self) {
