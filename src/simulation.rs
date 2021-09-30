@@ -21,11 +21,14 @@ impl Simulation {
 
     pub fn step(&mut self, _step: u32, reporter: &mut Reporter) {
         self.agents.step(&mut self.market);
-        // self.market.plot_depth(&format!("depth_{}.png", step));
+        // if step % 1000 == 0{
+        //     self.market.plot_depth(&format!("depth_{}.png", step));
+        // }
         self.market.step(&mut self.agents);
         report!(reporter, "price", self.market.price() as f64);
         report!(reporter, "volatility", self.market.volatility() as f64);
-        report!(reporter, "total cash", self.agents.total_cash() / 10000.0);
-        report!(reporter, "total assets", self.agents.total_assets(0) as f64 / 500.0);
+        report!(reporter, "median_cash", self.agents.cash_median() as f64);
+        // report!(reporter, "total cash", self.agents.total_cash());
+        // report!(reporter, "total assets", self.agents.total_assets(0) as f64);
     }
 }

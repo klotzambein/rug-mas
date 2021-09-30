@@ -30,7 +30,7 @@ impl GenoaMarket {
             id,
             price_history: IntoIter::new([p, p, p]).collect(),
             price_history_count: config.market.price_history_count,
-            volatility: 0.0,
+            volatility: config.market.initial_volatility,
             buy_orders: Vec::new(),
             sell_orders: Vec::new(),
         }
@@ -66,7 +66,7 @@ impl GenoaMarket {
             .price_history
             .iter()
             .zip(self.price_history.iter().skip(1))
-            .map(|(n, np1)| (np1 / n).log10());
+            .map(|(n, np1)| (np1 / n).ln());
 
         let log_return_average = log_returns.clone().sum::<f32>() / num_log_returns;
 
@@ -127,12 +127,24 @@ impl GenoaMarket {
         let drawing_area = BitMapBackend::new(path, (1024, 512)).into_drawing_area();
         drawing_area.fill(&WHITE).expect("Can't fill bitmap");
 
+        let x_range = self
+            .sell_orders
+            .iter()
+            .chain(&self.buy_orders)
+            .map(|v| (v.limit_price, v.limit_price))
+            .reduce(|(c_min, c_max), (n_min, n_max)| (c_min.min(n_min), c_max.max(n_max)))
+            .expect("no values reported");
+
+        let y_max_sell = self.sell_orders.iter().map(|so| so.asset_quantity).sum::<u32>();
+        let y_max_buy = self.buy_orders.iter().map(|so| so.asset_quantity).sum::<u32>();
+        let y_max = y_max_sell.max(y_max_buy);
+
         let mut chart = ChartBuilder::on(&drawing_area)
             .caption("Simulation Report", ("sans-serif", 50).into_font())
             .margin(25)
             .x_label_area_size(30)
             .y_label_area_size(30)
-            .build_cartesian_2d(-10f32..120f32, 0f32..10000f32)
+            .build_cartesian_2d(x_range.0..x_range.1, 0u32..y_max)
             .unwrap();
 
         chart.configure_mesh().draw().unwrap();
@@ -141,7 +153,7 @@ impl GenoaMarket {
             .draw_series(LineSeries::new(
                 self.sell_orders.iter().scan(0, |agg, so| {
                     *agg += so.asset_quantity;
-                    Some((so.limit_price, *agg as f32))
+                    Some((so.limit_price, *agg))
                 }),
                 RED,
             ))
@@ -152,7 +164,7 @@ impl GenoaMarket {
             .draw_series(LineSeries::new(
                 self.buy_orders.iter().scan(0, |agg, so| {
                     *agg += so.asset_quantity;
-                    Some((so.limit_price, *agg as f32))
+                    Some((so.limit_price, *agg))
                 }),
                 GREEN,
             ))
@@ -161,7 +173,7 @@ impl GenoaMarket {
             .legend(move |(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], GREEN));
 
         chart
-            .draw_series(LineSeries::new([(price, 0.0), (price, 10000.0)], BLACK))
+            .draw_series(LineSeries::new([(price, 0), (price, 10000)], BLACK))
             .unwrap()
             .label("price")
             .legend(move |(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], BLACK));
@@ -210,7 +222,7 @@ impl GenoaMarket {
                 }
             }
         }
-
+        
         let price = (bos_price + sos_price) / 2.0;
         let amount_executed = sos_sum.min(bos_sum);
 

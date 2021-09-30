@@ -30,6 +30,7 @@ impl Default for Config {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct MarketConfig {
     pub initial_price: f32,
+    pub initial_volatility: f32,
     pub price_history_count: usize,
 }
 
@@ -37,6 +38,7 @@ impl Default for MarketConfig {
     fn default() -> Self {
         Self {
             initial_price: 100.0,
+            initial_volatility: 0.003,
             price_history_count: 20,
         }
     }
@@ -45,12 +47,14 @@ impl Default for MarketConfig {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AgentConfig {
     pub initial_cash: f32,
+    pub initial_assets: u32,
 }
 
 impl Default for AgentConfig {
     fn default() -> Self {
         Self {
-            initial_cash: 30000.0,
+            initial_cash: 3000.0,
+            initial_assets: 30,
         }
     }
 }

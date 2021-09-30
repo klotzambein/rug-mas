@@ -1,10 +1,6 @@
 use std::{cmp::Ordering, collections::HashMap, fmt::Write, hash::Hash};
 
-use plotters::{
-    coord::Shift,
-    prelude::{ChartBuilder, DrawingArea, DrawingBackend, LineSeries, PathElement},
-    style::{Color, IntoFont, Palette, Palette99, BLACK, WHITE},
-};
+use plotters::{coord::Shift, prelude::{ChartBuilder, DrawingArea, DrawingBackend, LineSeries}, style::{BLACK, Color, IntoFont}};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FileLocation {
@@ -70,13 +66,13 @@ impl Reporter {
         DA: DrawingBackend,
     {
         let chart_count = self.per_step.len();
-        let chart_width = (chart_count as f64).sqrt() as usize;
+        let chart_width = (chart_count as f64).sqrt().round() as usize;
         let chart_height = chart_count / chart_width + (chart_count % chart_width != 0) as usize;
         let das = da.split_evenly((chart_width, chart_height));
 
         for ((target, series), da) in self.per_step.iter().zip(das) {
             let label = target.to_string();
-            let color = BLACK;
+            let color = BLACK.mix(0.01);
 
             let max_step = series.len();
 
@@ -90,13 +86,19 @@ impl Reporter {
 
             let mut chart = ChartBuilder::on(&da)
                 .caption(label, ("monospace", 25).into_font())
-                .margin(10).margin_top(0).margin_bottom(0)
+                .margin(10)
+                .margin_top(0)
+                .margin_bottom(0)
                 .x_label_area_size(25)
                 .y_label_area_size(50)
                 .build_cartesian_2d(0..max_step, y_range.0..y_range.1)
                 .unwrap();
 
-            chart.configure_mesh().y_label_formatter(&|x| format!("{:2.2e}", x)).draw().unwrap();
+            chart
+                .configure_mesh()
+                .y_label_formatter(&|x| format!("{:2.2e}", x))
+                .draw()
+                .unwrap();
 
             chart
                 .draw_series(LineSeries::new(

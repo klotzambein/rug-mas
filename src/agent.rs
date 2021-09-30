@@ -27,7 +27,7 @@ impl Agent {
         Agent {
             cash: config.agent.initial_cash,
             belief_state: 0,
-            assets: vec![30, 30, 30],
+            assets: vec![config.agent.initial_assets; 3],
             interest_prob_vector: vec![0.0, 0.0, 0.0],
         }
     }
@@ -91,6 +91,12 @@ impl AgentCollection {
 
     pub fn total_assets(&self, market: MarketId) -> u32 {
         self.agents.iter().map(|a| a.assets[market as usize]).sum()
+    }
+
+    pub fn cash_median(&self) -> f32 {
+        let mut cashs: Vec<_> = self.agents.iter().map(|a| a.cash).collect();
+        cashs.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        cashs[cashs.len() / 2]
     }
 
     pub fn assign_states(&mut self) {
