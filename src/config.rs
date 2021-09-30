@@ -20,7 +20,7 @@ impl Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            agent_count: 100,
+            agent_count: 1000,
             market: MarketConfig::default(),
             agent: AgentConfig::default(),
         }

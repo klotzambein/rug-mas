@@ -1,6 +1,10 @@
 use std::{cmp::Ordering, collections::HashMap, fmt::Write, hash::Hash};
 
-use plotters::{coord::Shift, prelude::{ChartBuilder, DrawingArea, DrawingBackend, LineSeries}, style::{BLACK, Color, IntoFont}};
+use plotters::{
+    coord::Shift,
+    prelude::{ChartBuilder, DrawingArea, DrawingBackend, LineSeries},
+    style::{Color, IntoFont, BLACK},
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FileLocation {

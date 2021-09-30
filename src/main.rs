@@ -2,7 +2,10 @@ use std::{error::Error, path::PathBuf};
 
 use clap::{AppSettings, Clap};
 use config::Config;
-use plotters::{prelude::{BitMapBackend, IntoDrawingArea}, style::WHITE};
+use plotters::{
+    prelude::{BitMapBackend, IntoDrawingArea},
+    style::WHITE,
+};
 use report::Reporter;
 use simulation::Simulation;
 use toml::to_string_pretty;

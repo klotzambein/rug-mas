@@ -25,10 +25,9 @@ pub struct GenoaMarket {
 
 impl GenoaMarket {
     pub fn new(config: &Config, id: MarketId) -> GenoaMarket {
-        let p = config.market.initial_price;
         GenoaMarket {
             id,
-            price_history: IntoIter::new([p, p, p]).collect(),
+            price_history: IntoIter::new([config.market.initial_price; 3]).collect(),
             price_history_count: config.market.price_history_count,
             volatility: config.market.initial_volatility,
             buy_orders: Vec::new(),
@@ -135,8 +134,16 @@ impl GenoaMarket {
             .reduce(|(c_min, c_max), (n_min, n_max)| (c_min.min(n_min), c_max.max(n_max)))
             .expect("no values reported");
 
-        let y_max_sell = self.sell_orders.iter().map(|so| so.asset_quantity).sum::<u32>();
-        let y_max_buy = self.buy_orders.iter().map(|so| so.asset_quantity).sum::<u32>();
+        let y_max_sell = self
+            .sell_orders
+            .iter()
+            .map(|so| so.asset_quantity)
+            .sum::<u32>();
+        let y_max_buy = self
+            .buy_orders
+            .iter()
+            .map(|so| so.asset_quantity)
+            .sum::<u32>();
         let y_max = y_max_sell.max(y_max_buy);
 
         let mut chart = ChartBuilder::on(&drawing_area)
@@ -222,7 +229,7 @@ impl GenoaMarket {
                 }
             }
         }
-        
+
         let price = (bos_price + sos_price) / 2.0;
         let amount_executed = sos_sum.min(bos_sum);
 
