@@ -76,7 +76,7 @@ impl Reporter {
 
         for ((target, series), da) in self.per_step.iter().zip(das) {
             let label = target.to_string();
-            let color = BLACK.mix(0.01);
+            let color = BLACK.mix(0.3);
 
             let max_step = series.len();
 
