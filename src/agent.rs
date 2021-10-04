@@ -5,7 +5,7 @@ asset, and other news (random noise in our case).
 TODO: Fundamentalists? From the DGA paper.
 */
 
-use rand::random;
+use rand::prelude::*;
 
 use crate::{
     config::Config,
@@ -17,18 +17,22 @@ pub type AgentId = u32;
 #[derive(Debug, Clone)]
 pub struct Agent {
     cash: f32,
-    belief_state: u32,
     assets: Vec<u32>, // Vector representing the ammount of assets an agent holds.
+    market_preference: u32, // Value that represents the market in which an agent invests next.
     interest_prob_vector: Vec<f32>, // Vector encapsulating each market preference of an agent. Contains probabilities between [0, 1].
+    fundamentalism_ratio: f32, // Variable describing how likely an agent is to make informed decisions vs following the crowd.
+    order_probability: f32, // Value that describes how likely and agent is to place orders at each timestep.
 }
 
 impl Agent {
     pub fn new(config: &Config) -> Agent {
         Agent {
             cash: config.agent.initial_cash,
-            belief_state: 0,
+            market_preference: 0,
             assets: vec![config.agent.initial_assets; 3],
             interest_prob_vector: vec![0.0, 0.0, 0.0],
+            fundamentalism_ratio: 0.35,
+            order_probability: 0.5,
         }
     }
 
@@ -83,6 +87,9 @@ impl AgentCollection {
                 market.sell_order(agent_id, (assets_owned * random::<f32>()) as u32)
             }
         }
+
+        self.update_market_interest(market);
+        self.update_behaviour();
     }
 
     pub fn total_cash(&self) -> f64 {
@@ -97,11 +104,36 @@ impl AgentCollection {
         let mut cashs: Vec<_> = self.agents.iter().map(|a| a.cash).collect();
         cashs.sort_by(|a, b| a.partial_cmp(b).unwrap());
         cashs[cashs.len() / 2]
+    }// Making decision based on 
+
+    pub fn update_behaviour(&mut self) {
+        // Update trading behaviour based on how much the agent won/lost.
+        // Gambler's fallacy + noise
+        // Variables to update: fundamentalism_ratio(?), order_probability
+        todo!()
     }
 
-    pub fn assign_states(&mut self) {
-        // Every agent updates their beliefs based on other agents' interests,
-        // overall profits from a market and other random factors.
-        todo!()
+    pub fn update_market_interest(&mut self, market: &GenoaMarket) {
+        // Every agent updates their beliefs based on other agents' preferences
+        // and their own interests. At every time step, the interest for a market
+        // is updated based on performance (overall profits from a market), news
+        // and random noise.
+        let mut rng = rand::thread_rng();
+        let m_id = market.id() as usize;
+        let mut rand_idx: usize;
+        let mut market_noise: f32;
+
+        for idx in 0..self.agents.len() {
+            rand_idx = rng.gen_range(0..self.agents.len());
+            market_noise = rng.gen_range(0.0..1.0);
+
+            self.agents[idx].interest_prob_vector[m_id] = ((1.
+                - self.agents[idx].fundamentalism_ratio)            
+                * self.agents[rand_idx].interest_prob_vector[m_id]  // Making decision based on herd behaviour.
+                + self.agents[idx].fundamentalism_ratio
+                * (market.get_markup() + market.get_news())         // Making decision based on fundamentals.
+                + market_noise)                                 // Adding noise to decision.
+                .tanh();                                            // Keeping the value between 0 and 1.
+        }
     }
 }
