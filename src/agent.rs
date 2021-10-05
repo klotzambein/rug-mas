@@ -5,7 +5,7 @@ asset, and other news (random noise in our case).
 TODO: Fundamentalists? From the DGA paper.
 */
 
-use rand::prelude::*;
+use rand::prelude::{Rng, random, thread_rng};
 
 use crate::{
     config::Config,
@@ -104,21 +104,21 @@ impl AgentCollection {
         let mut cashs: Vec<_> = self.agents.iter().map(|a| a.cash).collect();
         cashs.sort_by(|a, b| a.partial_cmp(b).unwrap());
         cashs[cashs.len() / 2]
-    }// Making decision based on 
+    } // Making decision based on
 
+    // Update trading behaviour based on how much the agent won/lost.
+    // Gambler's fallacy + noise
+    // Variables to update: fundamentalism_ratio(?), order_probability
     pub fn update_behaviour(&mut self) {
-        // Update trading behaviour based on how much the agent won/lost.
-        // Gambler's fallacy + noise
-        // Variables to update: fundamentalism_ratio(?), order_probability
         todo!()
     }
 
+    // Every agent updates their beliefs based on other agents' preferences
+    // and their own interests. At every time step, the interest for a market
+    // is updated based on performance (overall profits from a market), news
+    // and random noise.
     pub fn update_market_interest(&mut self, market: &GenoaMarket) {
-        // Every agent updates their beliefs based on other agents' preferences
-        // and their own interests. At every time step, the interest for a market
-        // is updated based on performance (overall profits from a market), news
-        // and random noise.
-        let mut rng = rand::thread_rng();
+        let mut rng = thread_rng();
         let m_id = market.id() as usize;
         let mut rand_idx: usize;
         let mut market_noise: f32;
@@ -128,12 +128,12 @@ impl AgentCollection {
             market_noise = rng.gen_range(0.0..1.0);
 
             self.agents[idx].interest_prob_vector[m_id] = ((1.
-                - self.agents[idx].fundamentalism_ratio)            
+                - self.agents[idx].fundamentalism_ratio)
                 * self.agents[rand_idx].interest_prob_vector[m_id]  // Making decision based on herd behaviour.
                 + self.agents[idx].fundamentalism_ratio
                 * (market.get_markup() + market.get_news())         // Making decision based on fundamentals.
-                + market_noise)                                 // Adding noise to decision.
-                .tanh();                                            // Keeping the value between 0 and 1.
+                + market_noise) // Adding noise to decision.
+                .tanh(); // Keeping the value between 0 and 1.
         }
     }
 }
