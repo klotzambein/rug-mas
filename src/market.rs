@@ -4,7 +4,7 @@ use plotters::{
     prelude::{BitMapBackend, ChartBuilder, IntoDrawingArea, LineSeries, PathElement},
     style::{Color, IntoFont, BLACK, GREEN, RED, WHITE},
 };
-use rand::prelude::*;
+use rand::prelude::{Rng, Distribution, thread_rng};
 
 use crate::{
     agent::{AgentCollection, AgentId},
@@ -19,6 +19,7 @@ pub struct GenoaMarket {
     price_history: VecDeque<f32>,
     price_history_count: usize,
     volatility: f32,
+    news_indicator: f32,
     buy_orders: Vec<GenoaOrder>,
     sell_orders: Vec<GenoaOrder>,
 }
@@ -30,6 +31,7 @@ impl GenoaMarket {
             price_history: IntoIter::new([config.market.initial_price; 3]).collect(),
             price_history_count: config.market.price_history_count,
             volatility: config.market.initial_volatility,
+            news_indicator: thread_rng().gen_range(-1.0..1.0),
             buy_orders: Vec::new(),
             sell_orders: Vec::new(),
         }
@@ -48,6 +50,7 @@ impl GenoaMarket {
         self.execute_sell_orders(amount_executed, agents, price);
 
         self.compute_volatility();
+        self.update_news();
 
         self.buy_orders.clear();
         self.sell_orders.clear();
@@ -263,7 +266,7 @@ impl GenoaMarket {
         let limit_price = self.price()
             / rand_distr::Normal::new(1.01, 3.5 * self.volatility)
                 .unwrap()
-                .sample(&mut rand::thread_rng());
+                .sample(&mut thread_rng());
         self.sell_orders.push(GenoaOrder {
             agent,
             asset_quantity,
@@ -278,12 +281,31 @@ impl GenoaMarket {
         let limit_price = self.price()
             * rand_distr::Normal::new(1.01, 3.5 * self.volatility)
                 .unwrap()
-                .sample(&mut rand::thread_rng());
+                .sample(&mut thread_rng());
         self.buy_orders.push(GenoaOrder {
             agent,
             limit_price,
             asset_quantity: (cash_quantity / limit_price) as u32,
         })
+    }
+
+    /// Updating news by introducing noise and maintaining the value
+    // between -1 and 1 (using the Sigmoid function).
+    pub fn update_news(&mut self) {
+        self.news_indicator =
+            1. / (1. + (-self.news_indicator + thread_rng().gen_range(-2.5..2.5)).exp());
+    }
+
+    /// A simple value that indicates the status of a market.
+    pub fn get_news(&self) -> f32 {
+        self.news_indicator
+    }
+
+    /// Returns profit since last timestep as a percentage.
+    pub fn get_markup(&self) -> f32 {
+        let history_len = self.price_history.len();
+        (self.price_history[history_len] - self.price_history[history_len - 1])
+            / self.price_history[history_len - 1]
     }
 
     pub fn volatility(&self) -> f32 {
