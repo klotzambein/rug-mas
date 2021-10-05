@@ -5,7 +5,7 @@ asset, and other news (random noise in our case).
 TODO: Fundamentalists? From the DGA paper.
 */
 
-use rand::prelude::{Rng, random, thread_rng};
+use rand::prelude::{random, thread_rng, Rng};
 
 use crate::{
     config::Config,
@@ -17,20 +17,29 @@ pub type AgentId = u32;
 #[derive(Debug, Clone)]
 pub struct Agent {
     cash: f32,
-    assets: Vec<u32>, // Vector representing the ammount of assets an agent holds.
-    market_preference: u32, // Value that represents the market in which an agent invests next.
-    interest_prob_vector: Vec<f32>, // Vector encapsulating each market preference of an agent. Contains probabilities between [0, 1].
-    fundamentalism_ratio: f32, // Variable describing how likely an agent is to make informed decisions vs following the crowd.
-    order_probability: f32, // Value that describes how likely and agent is to place orders at each timestep.
+    /// Vector representing the ammount of assets an agent holds.
+    assets: Vec<u32>, 
+    // Value that represents the market in which an agent invests next.
+    // market_preference: u32,
+    /// Vector encapsulating each market preference of an agent. Contains probabilities between [0, 1].
+    confidence_probability: Vec<f32>, 
+    /// Variable describing how likely an agent is to make informed decisions vs following the crowd.
+    fundamentalism_ratio: f32,
+    /// Value that describes how likely and agent is to place orders at each timestep.
+    order_probability: f32,
+    // Value that describes how likely an agent is to change its preferences.
+    // change_probability: f32,
+    // Friend list containing trust values for other agents.
+    // friends: VecDeque<f32>,
 }
 
 impl Agent {
     pub fn new(config: &Config) -> Agent {
         Agent {
             cash: config.agent.initial_cash,
-            market_preference: 0,
+            // market_preference: 0,
             assets: vec![config.agent.initial_assets; 3],
-            interest_prob_vector: vec![0.0, 0.0, 0.0],
+            confidence_probability: vec![0.0, 0.0, 0.0],
             fundamentalism_ratio: 0.35,
             order_probability: 0.5,
         }
@@ -88,7 +97,7 @@ impl AgentCollection {
             }
         }
 
-        self.update_market_interest(market);
+        self.update_market_confidence(market);
         self.update_behaviour();
     }
 
@@ -117,23 +126,25 @@ impl AgentCollection {
     /// and their own interests. At every time step, the interest for a market
     /// is updated based on performance (overall profits from a market), news
     /// and random noise.
-    pub fn update_market_interest(&mut self, market: &GenoaMarket) {
+    pub fn update_market_confidence(&mut self, market: &GenoaMarket) {
         let mut rng = thread_rng();
         let m_id = market.id() as usize;
         let mut rand_idx: usize;
-        let mut market_noise: f32;
+        // let mut market_noise: f32;
 
         for idx in 0..self.agents.len() {
             rand_idx = rng.gen_range(0..self.agents.len());
-            market_noise = rng.gen_range(0.0..1.0);
+            
+            // market_noise = rng.gen_range(0.0..1.0); // Adding noise to decision.
+            // Making decision based on herd behaviour.
+            // let herd_val = 
+            //     ((1. - self.agents[idx].fundamentalism_ratio)) * self.agents[rand_idx].confidence_probability[m_id];
+            // Making decision based on fundamentals.  
+            // let fund_val = self.agents[idx].fundamentalism_ratio * (market.get_markup() + market.get_news()); 
 
-            self.agents[idx].interest_prob_vector[m_id] = ((1.
-                - self.agents[idx].fundamentalism_ratio)
-                * self.agents[rand_idx].interest_prob_vector[m_id]  // Making decision based on herd behaviour.
-                + self.agents[idx].fundamentalism_ratio
-                * (market.get_markup() + market.get_news())         // Making decision based on fundamentals.
-                + market_noise) // Adding noise to decision.
-                .tanh(); // Keeping the value between 0 and 1.
+            // Keeping the value between 0 and 1 using the Sigmoid function.
+            self.agents[idx].confidence_probability[m_id] = self.agents[rand_idx].confidence_probability[m_id];
+            // self.agents[idx].confidence_probability[m_id] = 1. / (1. + (-herd_val - fund_val - market_noise).exp());
         }
     }
 }
