@@ -289,19 +289,19 @@ impl GenoaMarket {
         })
     }
 
-    // Updating news by introducing noise and maintaining the value
+    /// Updating news by introducing noise and maintaining the value
     // between -1 and 1 (using the Sigmoid function).
     pub fn update_news(&mut self) {
         self.news_indicator =
             1. / (1. + (-self.news_indicator + thread_rng().gen_range(-2.5..2.5)).exp());
     }
 
-    // A simple value that indicates the status of a market.
+    /// A simple value that indicates the status of a market.
     pub fn get_news(&self) -> f32 {
         self.news_indicator
     }
 
-    // Returns profit since last timestep as a percentage.
+    /// Returns profit since last timestep as a percentage.
     pub fn get_markup(&self) -> f32 {
         let history_len = self.price_history.len();
         (self.price_history[history_len] - self.price_history[history_len - 1])

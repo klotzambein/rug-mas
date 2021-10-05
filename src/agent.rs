@@ -106,17 +106,17 @@ impl AgentCollection {
         cashs[cashs.len() / 2]
     } // Making decision based on
 
-    // Update trading behaviour based on how much the agent won/lost.
-    // Gambler's fallacy + noise
-    // Variables to update: fundamentalism_ratio(?), order_probability
+    /// Update trading behaviour based on how much the agent won/lost.
+    /// Gambler's fallacy + noise
+    /// Variables to update: fundamentalism_ratio(?), order_probability
     pub fn update_behaviour(&mut self) {
         todo!()
     }
 
-    // Every agent updates their beliefs based on other agents' preferences
-    // and their own interests. At every time step, the interest for a market
-    // is updated based on performance (overall profits from a market), news
-    // and random noise.
+    /// Every agent updates their beliefs based on other agents' preferences
+    /// and their own interests. At every time step, the interest for a market
+    /// is updated based on performance (overall profits from a market), news
+    /// and random noise.
     pub fn update_market_interest(&mut self, market: &GenoaMarket) {
         let mut rng = thread_rng();
         let m_id = market.id() as usize;
