@@ -4,7 +4,7 @@ use plotters::{
     prelude::{BitMapBackend, ChartBuilder, IntoDrawingArea, LineSeries, PathElement},
     style::{Color, IntoFont, BLACK, GREEN, RED, WHITE},
 };
-use rand::prelude::{Rng, Distribution, thread_rng};
+use rand::prelude::{thread_rng, Distribution, Rng};
 
 use crate::{
     agent::{AgentCollection, AgentId},
@@ -290,10 +290,10 @@ impl GenoaMarket {
     }
 
     /// Updating news by introducing noise and maintaining the value
-    // between -1 and 1 (using the Sigmoid function).
+    // between -1 and 1.
     pub fn update_news(&mut self) {
         self.news_indicator =
-            1. / (1. + (-self.news_indicator + thread_rng().gen_range(-2.5..2.5)).exp());
+            (-self.news_indicator + thread_rng().gen_range(-2.5..2.5)).tanh();
     }
 
     /// A simple value that indicates the status of a market.
