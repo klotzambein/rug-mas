@@ -5,7 +5,14 @@ asset, and other news (random noise in our case).
 TODO: Fundamentalists? From the DGA paper.
 */
 
-use rand::{distributions::Uniform, prelude::random, prelude::Rng, thread_rng};
+use std::iter::repeat_with;
+
+use rand::{
+    distributions::Uniform,
+    prelude::Rng,
+    prelude::{random, ThreadRng},
+    thread_rng,
+};
 
 use crate::{
     config::Config,
@@ -43,12 +50,12 @@ pub struct Agent {
 }
 
 impl Agent {
-    pub fn new(config: &Config) -> Agent {
+    pub fn new(config: &Config, rng: &mut ThreadRng) -> Agent {
         Agent {
-            cash: config.agent.initial_cash,
+            cash: config.agent.initial_cash.sample_f32(rng),
             // market_preference: 0,
             assets: vec![config.agent.initial_assets; config.market.market_count],
-            state: std::iter::repeat_with(|| random::<bool>() as usize as f32)
+            state: repeat_with(|| random::<bool>() as usize as f32)
                 .take(config.market.market_count)
                 .collect(),
             // fundamentalism_ratio: 0.35,
@@ -84,11 +91,12 @@ pub struct AgentCollection {
 
 impl AgentCollection {
     pub fn new(config: &Config) -> AgentCollection {
+        let mut rng = thread_rng();
         AgentCollection {
-            agents: std::iter::repeat_with(|| Agent::new(config))
+            agents: repeat_with(|| Agent::new(config, &mut rng))
                 .take(config.agent.agent_count)
                 .collect(),
-            fundamentalists: std::iter::repeat_with(|| random::<bool>() as usize as f32)
+            fundamentalists: repeat_with(|| rng.gen::<bool>() as usize as f32)
                 .take(config.agent.fundamentalist_count)
                 .collect(),
         }
