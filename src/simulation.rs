@@ -25,6 +25,7 @@ impl Simulation {
         //     self.market.plot_depth(&format!("depth_{}.png", step));
         // }
         self.market.step(&mut self.agents);
+        println!("{}", self.agents.mean_state());
         report!(reporter, "price", self.market.price() as f64);
         report!(reporter, "volatility", self.market.volatility() as f64);
         report!(reporter, "median_cash", self.agents.cash_median() as f64);

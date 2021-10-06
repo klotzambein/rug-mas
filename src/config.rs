@@ -49,6 +49,8 @@ pub struct AgentConfig {
     pub fundamentalist_count: usize,
     pub agent_count: usize,
     pub order_probability: f32,
+    pub influence_probability: f32,
+    pub influencers_count: usize,
 }
 
 impl Default for AgentConfig {
@@ -59,6 +61,8 @@ impl Default for AgentConfig {
             agent_count: 1000,
             fundamentalist_count: 100,
             order_probability: 1.0,
+            influence_probability: 0.8,
+            influencers_count: 1,
         }
     }
 }
