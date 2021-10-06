@@ -5,7 +5,7 @@ asset, and other news (random noise in our case).
 TODO: Fundamentalists? From the DGA paper.
 */
 
-use rand::{distributions::Uniform, prelude::random, prelude::Rng};
+use rand::{distributions::Uniform, prelude::random, prelude::Rng, thread_rng};
 
 use crate::{
     config::Config,
@@ -18,17 +18,17 @@ pub type AgentId = u32;
 pub struct Agent {
     cash: f32,
     /// Vector representing the ammount of assets an agent holds.
-    assets: u32,
+    assets: Vec<u32>,
 
     // /// Value that represents the market in which an agent invests next.
     // market_preference: u32,
     /// Vector encapsulating each market preference of an agent. Contains probabilities between [0, 1].
-    state: u32,
+    state: Vec<f32>,
 
     // /// Variable describing how likely an agent is to make informed decisions vs following the crowd.
     // fundamentalism_ratio: f32,
     /// Value that describes how likely and agent is to place orders at each timestep.
-    order_probability: f32,
+    order_probability: Vec<f32>,
 
     /// Value that describes how likely and agent is to be influenced at each timestep.
     influence_probability: f32,
@@ -47,27 +47,29 @@ impl Agent {
         Agent {
             cash: config.agent.initial_cash,
             // market_preference: 0,
-            assets: config.agent.initial_assets,
-            state: rand::thread_rng().gen_range(0..1),
+            assets: vec![config.agent.initial_assets; config.market.market_count],
+            state: std::iter::repeat_with(|| random::<bool>() as usize as f32)
+                .take(config.market.market_count)
+                .collect(),
             // fundamentalism_ratio: 0.35,
-            order_probability: config.agent.order_probability,
+            order_probability: vec![config.agent.order_probability; config.market.market_count],
             influence_probability: config.agent.influence_probability,
             influencers_count: config.agent.influencers_count,
         }
     }
 
-    pub fn apply_buy(&mut self, _market: MarketId, asset_quantity: u32, price_per_item: f32) {
+    pub fn apply_buy(&mut self, market: MarketId, asset_quantity: u32, price_per_item: f32) {
         self.cash -= price_per_item * asset_quantity as f32;
 
         assert!(self.cash >= 0.0, "Agent ran out of cash");
 
-        self.assets += asset_quantity;
+        self.assets[market] += asset_quantity;
     }
 
-    pub fn apply_sell(&mut self, _market: MarketId, asset_quantity: u32, price_per_item: f32) {
+    pub fn apply_sell(&mut self, market: MarketId, asset_quantity: u32, price_per_item: f32) {
         self.cash += price_per_item * asset_quantity as f32;
 
-        let a = &mut self.assets;
+        let a = &mut self.assets[market];
         *a = a
             .checked_sub(asset_quantity)
             .expect("Agent ran out of asset");
@@ -77,7 +79,7 @@ impl Agent {
 #[derive(Debug, Clone)]
 pub struct AgentCollection {
     agents: Vec<Agent>,
-    fundamentalists: Vec<u32>,
+    fundamentalists: Vec<f32>,
 }
 
 impl AgentCollection {
@@ -86,7 +88,7 @@ impl AgentCollection {
             agents: std::iter::repeat_with(|| Agent::new(config))
                 .take(config.agent.agent_count)
                 .collect(),
-            fundamentalists: std::iter::repeat_with(|| random::<bool>() as usize as u32)
+            fundamentalists: std::iter::repeat_with(|| random::<bool>() as usize as f32)
                 .take(config.agent.fundamentalist_count)
                 .collect(),
         }
@@ -100,22 +102,30 @@ impl AgentCollection {
         &mut self.agents[id as usize]
     }
 
-    pub fn step(&mut self, market: &mut GenoaMarket) {
-        self.dga(market.id());
+    /// Call this function first, once every step.
+    pub fn step(&mut self) {
+        self.dga();
+    }
+
+    /// Call this function after [`Self::step`], once for every market.
+    pub fn step_market(&mut self, market: &mut GenoaMarket) {
         self.trade_on_market(market);
-        // self.update_behaviour();
     }
 
     pub fn total_cash(&self) -> f64 {
         self.agents.iter().map(|a| a.cash as f64).sum()
     }
 
-    pub fn total_assets(&self, _market: MarketId) -> u32 {
-        self.agents.iter().map(|a| a.assets).sum()
+    pub fn total_assets(&self, market: MarketId) -> u32 {
+        self.agents.iter().map(|a| a.assets[market]).sum()
     }
 
-    pub fn mean_state(&self) -> f32 {
-        let states = self.agents.iter().map(|a| a.state as f32).sum::<f32>();
+    pub fn mean_state(&self, market: MarketId) -> f32 {
+        let states = self
+            .agents
+            .iter()
+            .map(|a| a.state[market] as f32)
+            .sum::<f32>();
         states / self.agents.len() as f32
     }
 
@@ -125,87 +135,72 @@ impl AgentCollection {
         cashs[cashs.len() / 2]
     }
 
-    // /// Update trading behaviour based on how much the agent won/lost.
-    // /// Gambler's fallacy + noise
-    // /// Variables to update: fundamentalism_ratio(?), order_probability
-    // pub fn update_behaviour(&mut self) {
-    //     todo!()
-    // }
+    /// Give the state of either an agent or a fundamentalist. `idx` must be in
+    /// range 0 to len(agents) + len(fundamentalists)
+    pub fn influence_at(&self, idx: usize, market: MarketId) -> f32 {
+        if idx < self.agents.len() {
+            self.agents[idx].state[market]
+        } else {
+            self.fundamentalists[idx - self.agents.len()]
+        }
+    }
 
     /// Every agent updates their beliefs based on other agents' preferences
     /// and their own interests. At every time step, the interest for a market
     /// is updated based on performance (overall profits from a market), news
     /// and random noise.
-    pub fn dga(&mut self, _market: MarketId) {
-        // let m_id = market as usize;
+    pub fn dga(&mut self) {
+        // let m_id = market;
         // let mut market_noise: f32;
 
         // More efficient this way.
+        let mut rng = thread_rng();
+
         let range = Uniform::from(0..self.agents.len() + self.fundamentalists.len());
+        let market_count = self.agents.first().expect("No agents.").assets.len();
 
         for idx in 0..self.agents.len() {
-            // Check if the current agent is to be influenced based on the influence probablity.
-            if random::<f32>() < self.agents[idx].influence_probability {
-                let influencer_count = self.agents[idx].influencers_count as f32;
-                // Get some random id's for influencer agents.
-                let rand_idx: Vec<usize> = rand::thread_rng()
+            let influencer_count = self.agents[idx].influencers_count;
+            // Check if the current agent is to be influenced based on the influence probability.
+            if rng.gen::<f32>() < self.agents[idx].influence_probability {
+                // Generate our influencers
+                let influencers = rng
+                    .clone()
                     .sample_iter(&range)
-                    .take(influencer_count as usize)
-                    .collect();
+                    // Make sure we do not influence ourselves
+                    .filter(|&i: &usize| i != idx)
+                    .take(influencer_count)
+                    .collect::<Vec<_>>();
 
-                // Agents can't influence themselves.
-                if !rand_idx.contains(&idx) {
-                    let mut states: f32 = 0.0;
+                // Influence all markets
+                for market in 0..market_count {
+                    // Take random agents and sum their influence.
+                    let influence_sum = influencers
+                        .iter()
+                        .map(|&i| self.influence_at(i, market))
+                        .sum::<f32>();
 
-                    // Add the states of the influencer agents together.
-                    for current_idx in 0..rand_idx.len() {
-                        if rand_idx[current_idx] < self.agents.len() {
-                            states += self.agents[rand_idx[current_idx]].state as f32
-                        } else {
-                            states += self.fundamentalists
-                                [rand_idx[current_idx] - self.agents.len()]
-                                as f32
-                        };
-                    }
+                    let influence = influence_sum / influencer_count as f32;
 
-                    let influencer_count_div = influencer_count / 2.0;
-                    
-                    // If more than half of the influencer agents have a certain state, choose that state. Random if it's equal.
-                    let influence = if states < influencer_count_div {
-                        0
-                    } else if states > influencer_count_div {
-                        1
-                    } else {
-                        rand::thread_rng().gen_range(0..1)
-                    };
-
-                    self.agents[idx].state = influence;
+                    self.agents[idx].state[market] = influence.round();
                 }
             }
-
-            // market_noise = rng.gen_range(0.0..1.0); // Adding noise to decision.
-            // Making decision based on herd behaviour.
-            // let herd_val =
-            //     ((1. - self.agents[idx].fundamentalism_ratio)) * self.agents[rand_idx].confidence_probability[m_id];
-            // Making decision based on fundamentals.
-            // let fund_val = self.agents[idx].fundamentalism_ratio * (market.get_markup() + market.get_news());
-
-            // Keeping the value between 0 and 1 using the Sigmoid function.
-
-            // self.agents[idx].confidence_probability[m_id] = 1. / (1. + (-herd_val - fund_val - market_noise).exp());
         }
     }
 
     pub fn trade_on_market(&mut self, market: &mut GenoaMarket) {
+        let mut rng = thread_rng();
+
         for (agent_id, agent) in self.agents.iter_mut().enumerate() {
             let agent_id = agent_id as AgentId;
-            // let m_id = market.id() as usize;
+            let m_id = market.id();
 
-            if random::<f32>() < agent.order_probability {
-                if agent.state == 0 {
-                    market.buy_order(agent_id, agent.cash * random::<f32>());
+            if rng.gen::<f32>() < agent.order_probability[m_id] {
+                if rng.gen::<f32>() < agent.state[m_id] {
+                    market.buy_order(agent_id, agent.cash * rng.gen::<f32>());
                 } else {
-                    market.sell_order(agent_id, (agent.assets as f32 * random::<f32>()) as u32)
+                    let assets = agent.assets[m_id] as f32 * rng.gen::<f32>();
+                    market.sell_order(agent_id, assets as u32)
                 }
             }
         }

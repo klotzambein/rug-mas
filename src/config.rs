@@ -3,7 +3,7 @@ use std::{error::Error, path::Path};
 use serde::{Deserialize, Serialize};
 use toml::from_str;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct Config {
     pub market: MarketConfig,
     pub agent: AgentConfig,
@@ -16,17 +16,9 @@ impl Config {
     }
 }
 
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            market: MarketConfig::default(),
-            agent: AgentConfig::default(),
-        }
-    }
-}
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct MarketConfig {
+    pub market_count: usize,
     pub initial_price: f32,
     pub initial_volatility: f32,
     pub price_history_count: usize,
@@ -35,6 +27,7 @@ pub struct MarketConfig {
 impl Default for MarketConfig {
     fn default() -> Self {
         Self {
+            market_count: 3,
             initial_price: 100.0,
             initial_volatility: 0.003,
             price_history_count: 20,

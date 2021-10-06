@@ -11,7 +11,7 @@ use crate::{
     config::Config,
 };
 
-pub type MarketId = u32;
+pub type MarketId = usize;
 
 #[derive(Debug, Clone)]
 pub struct GenoaMarket {
@@ -236,6 +236,10 @@ impl GenoaMarket {
         let price = (bos_price + sos_price) / 2.0;
         let amount_executed = sos_sum.min(bos_sum);
 
+        if price <= f32::EPSILON {
+            return None;
+        }
+
         Some((price, amount_executed))
     }
 
@@ -292,8 +296,7 @@ impl GenoaMarket {
     /// Updating news by introducing noise and maintaining the value
     // between -1 and 1.
     pub fn update_news(&mut self) {
-        self.news_indicator =
-            (-self.news_indicator + thread_rng().gen_range(-2.5..2.5)).tanh();
+        self.news_indicator = (-self.news_indicator + thread_rng().gen_range(-2.5..2.5)).tanh();
     }
 
     /// A simple value that indicates the status of a market.
