@@ -7,12 +7,7 @@ TODO: Fundamentalists? From the DGA paper.
 
 use std::iter::repeat_with;
 
-use rand::{
-    distributions::Uniform,
-    prelude::Rng,
-    prelude::{random, ThreadRng},
-    thread_rng,
-};
+use rand::{distributions::Uniform, prelude::Rng, prelude::ThreadRng, thread_rng};
 
 use crate::{
     config::Config,
@@ -54,14 +49,18 @@ impl Agent {
         Agent {
             cash: config.agent.initial_cash.sample_f32(rng),
             // market_preference: 0,
-            assets: vec![config.agent.initial_assets; config.market.market_count],
-            state: repeat_with(|| random::<bool>() as usize as f32)
+            assets: repeat_with(|| config.agent.initial_assets.sample_usize(rng) as u32)
+                .take(config.market.market_count)
+                .collect(),
+            state: repeat_with(|| config.agent.initial_state.sample_f32(rng))
                 .take(config.market.market_count)
                 .collect(),
             // fundamentalism_ratio: 0.35,
-            order_probability: vec![config.agent.order_probability; config.market.market_count],
-            influence_probability: config.agent.influence_probability,
-            influencers_count: config.agent.influencers_count,
+            order_probability: repeat_with(|| config.agent.order_probability.sample_f32(rng))
+                .take(config.market.market_count)
+                .collect(),
+            influence_probability: config.agent.influence_probability.sample_f32(rng),
+            influencers_count: config.agent.influencers_count.sample_usize(rng),
         }
     }
 

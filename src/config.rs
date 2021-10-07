@@ -1,6 +1,6 @@
-use std::{error::Error, path::Path, str::EncodeUtf16};
+use std::{error::Error, path::Path};
 
-use rand::prelude::ThreadRng;
+use rand::{prelude::ThreadRng, Rng};
 use rand_distr::{Distribution as RDist, Normal, Uniform};
 use serde::{Deserialize, Serialize};
 use toml::from_str;
@@ -29,7 +29,7 @@ pub struct MarketConfig {
 impl Default for MarketConfig {
     fn default() -> Self {
         Self {
-            market_count: 3,
+            market_count: 1,
             initial_price: 100.0,
             initial_volatility: 0.003,
             price_history_count: 20,
@@ -39,48 +39,83 @@ impl Default for MarketConfig {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AgentConfig {
-    pub initial_assets: u32,
     pub fundamentalist_count: usize,
     pub agent_count: usize,
-    pub order_probability: f32,
-    pub influence_probability: f32,
-    pub influencers_count: usize,
+    pub influencers_count: Distribution,
+    pub order_probability: Distribution,
+    pub influence_probability: Distribution,
     pub initial_cash: Distribution,
+    pub initial_assets: Distribution,
+    pub initial_state: Distribution,
 }
 
 impl Default for AgentConfig {
     fn default() -> Self {
         Self {
-            initial_assets: 30,
             agent_count: 1000,
             fundamentalist_count: 100,
-            order_probability: 1.0,
-            influence_probability: 0.8,
-            influencers_count: 1,
-            initial_cash: Distribution::NormalPositive {
-                mean: 3000.0,
-                sd: 0.0,
-            },
+            initial_assets: Distribution::static_value(30.0),
+            order_probability: Distribution::static_value(1.0),
+            influence_probability: Distribution::static_value(0.8),
+            influencers_count: Distribution::static_value(1.0),
+            initial_cash: Distribution::static_value(3000.0),
+            initial_state: Distribution::Bernoulli { p: 0.5 },
         }
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "distribution")]
 pub enum Distribution {
-    Uniform { start: f32, end: f32 },
-    Normal { mean: f32, sd: f32 },
-    NormalPositive { mean: f32, sd: f32 },
+    Uniform {
+        start: f32,
+        end: f32,
+    },
+    Normal {
+        mean: f32,
+        sd: f32,
+    },
+    Bernoulli {
+        p: f32,
+    },
+    Clamp {
+        min: f32,
+        max: f32,
+        inner: Box<Distribution>,
+    },
+    Round {
+        inner: Box<Distribution>,
+    },
 }
 
 impl Distribution {
-    pub fn sample_f32(self, rng: &mut ThreadRng) -> f32 {
+    pub fn static_value(val: f32) -> Distribution {
+        Distribution::Normal { mean: val, sd: 0.0 }
+    }
+
+    pub fn sample_f32(&self, rng: &mut ThreadRng) -> f32 {
         match self {
-            Distribution::Uniform { start, end } => Uniform::new(start, end).sample(rng),
-            Distribution::Normal { mean, sd } => Normal::new(mean, sd).unwrap().sample(rng),
-            Distribution::NormalPositive { mean, sd } => {
-                Normal::new(mean, sd).unwrap().sample(rng).max(0.0)
-            }
+            Distribution::Uniform { start, end } => Uniform::new(*start, *end).sample(rng),
+            Distribution::Normal { mean, sd } => Normal::new(*mean, *sd).unwrap().sample(rng),
+            Distribution::Bernoulli { p } => rng.gen_bool(*p as f64) as usize as f32,
+            Distribution::Clamp { min, max, inner } => inner.sample_f32(rng).clamp(*min, *max),
+            Distribution::Round { inner } => inner.sample_f32(rng).round(),
+        }
+    }
+
+    pub fn sample_usize(&self, rng: &mut ThreadRng) -> usize {
+        self.sample_f32(rng).round() as usize
+    }
+
+    pub fn sample_isize(&self, rng: &mut ThreadRng) -> isize {
+        self.sample_f32(rng).round() as isize
+    }
+
+    pub fn sample_bool(&self, rng: &mut ThreadRng) -> bool {
+        if let Self::Bernoulli { p } = self {
+            rng.gen_bool(*p as f64)
+        } else {
+            self.sample_usize(rng) != 0
         }
     }
 }
