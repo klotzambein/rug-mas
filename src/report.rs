@@ -126,8 +126,8 @@ impl Reporter {
         todo!()
     }
 
-    pub(crate) fn set_step(&mut self, step: u32) {
-        self.current_step = step as usize;
+    pub(crate) fn set_step(&mut self, step: usize) {
+        self.current_step = step;
     }
 }
 

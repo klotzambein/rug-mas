@@ -319,6 +319,10 @@ impl GenoaMarket {
         self.price_history[0]
     }
 
+    pub fn price_ago(&self, delay: usize) -> f32 {
+        self.price_history[delay]
+    }
+
     /// Get the genoa market's id.
     pub fn id(&self) -> MarketId {
         self.id

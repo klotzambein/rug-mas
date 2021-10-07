@@ -23,6 +23,26 @@ distribution = 'Normal'
 mean = 0.8
 sd = 0.0
 
+[agent.reflection_delay]
+distribution = 'Normal'
+mean = 10.0
+sd = 0.0
+
+[agent.friend_threshold]
+distribution = 'Normal'
+mean = 0.6
+sd = 0.0
+
+[agent.max_friends]
+distribution = 'Normal'
+mean = 0.0
+sd = 0.0
+
+[agent.friend_influence_probability]
+distribution = 'Normal'
+mean = 0.4
+sd = 0.0
+
 [agent.initial_cash]
 distribution = 'Normal'
 mean = 3000.0

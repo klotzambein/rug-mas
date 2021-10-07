@@ -39,13 +39,51 @@ impl Default for MarketConfig {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AgentConfig {
+    /// Total amount of fundamentalists in the simulation.
     pub fundamentalist_count: usize,
+
+    /// Total amount of agents in the simulation.
     pub agent_count: usize,
+
+    /// The amount of influencers that influence the agent every step, they will
+    /// be influenced.
     pub influencers_count: Distribution,
+
+    /// The probability that the agent will place any order in a market.
     pub order_probability: Distribution,
+
+    /// The probability that an agent will be influenced by anyone this step.
     pub influence_probability: Distribution,
+
+    /// How long, until the agent reflects on trades made, and potentially adds
+    /// friends. Needs to be smaller then `config.market.price_history_count`.
+    pub reflection_delay: Distribution,
+
+    /// The threshold above witch an influence becomes a friend. After a person
+    /// has been influenced and `reflection_delay` time has passed, the pearson
+    /// correlation between the market change and the influence will be
+    /// computed. Should this correlation be greater than the threshold, the
+    /// person will become a friend.
+    ///
+    /// To disable friends, set this to anything above 1.
+    pub friend_threshold: Distribution,
+
+    /// The maximum number of friends.
+    pub max_friends: Distribution,
+
+    /// Chance of being influenced by a particular friend. This only matters
+    /// when the agent is being influenced at all.
+    pub friend_influence_probability: Distribution,
+
+    /// Initial amount of cash an agent holds, should be balanced with the value
+    /// of stocks.
     pub initial_cash: Distribution,
+
+    /// Initial amount of assets/stocks the agent holds in every market.
     pub initial_assets: Distribution,
+
+    /// The initial belief the agent has about each market. Zero is bad, one is
+    /// good.
     pub initial_state: Distribution,
 }
 
@@ -60,6 +98,10 @@ impl Default for AgentConfig {
             influencers_count: Distribution::static_value(1.0),
             initial_cash: Distribution::static_value(3000.0),
             initial_state: Distribution::Bernoulli { p: 0.5 },
+            reflection_delay: Distribution::static_value(10.0),
+            friend_threshold: Distribution::static_value(0.6),
+            max_friends: Distribution::static_value(0.0),
+            friend_influence_probability: Distribution::static_value(0.4),
         }
     }
 }

@@ -21,8 +21,8 @@ impl Simulation {
         }
     }
 
-    pub fn step(&mut self, _step: u32, reporter: &mut Reporter) {
-        self.agents.step();
+    pub fn step(&mut self, step: usize, reporter: &mut Reporter) {
+        self.agents.step(&self.markets[..], step);
         for m in &mut self.markets {
             self.agents.step_market(m);
             m.step(&mut self.agents);

@@ -5,16 +5,17 @@ asset, and other news (random noise in our case).
 TODO: Fundamentalists? From the DGA paper.
 */
 
-use std::iter::repeat_with;
+use std::{collections::VecDeque, iter::repeat_with, ops::Div};
 
 use rand::{distributions::Uniform, prelude::Rng, prelude::ThreadRng, thread_rng};
+use rand_distr::Standard;
 
 use crate::{
     config::Config,
     market::{GenoaMarket, MarketId},
 };
 
-pub type AgentId = u32;
+pub type AgentId = usize;
 
 #[derive(Debug, Clone)]
 pub struct Agent {
@@ -37,11 +38,17 @@ pub struct Agent {
 
     /// Value that determines how many agents a single agent should be influenced from.
     influencers_count: usize,
+
+    reflection_delay: usize,
+    influences: VecDeque<(AgentId, Vec<f32>, usize)>,
+    friend_threshold: f32,
+    max_friends: usize,
+    friend_influence_probability: f32,
+
+    /// Friend list containing trust values for other agents.
+    friends: VecDeque<AgentId>,
     // /// Value that describes how likely an agent is to change its preferences.
     // change_probability: f32,
-
-    // /// Friend list containing trust values for other agents.
-    // friends: VecDeque<f32>,
 }
 
 impl Agent {
@@ -61,6 +68,12 @@ impl Agent {
                 .collect(),
             influence_probability: config.agent.influence_probability.sample_f32(rng),
             influencers_count: config.agent.influencers_count.sample_usize(rng),
+            reflection_delay: config.agent.reflection_delay.sample_usize(rng),
+            influences: VecDeque::new(),
+            friend_threshold: config.agent.friend_threshold.sample_f32(rng),
+            friends: VecDeque::new(),
+            max_friends: config.agent.max_friends.sample_usize(rng),
+            friend_influence_probability: config.agent.friend_influence_probability.sample_f32(rng),
         }
     }
 
@@ -85,7 +98,7 @@ impl Agent {
 #[derive(Debug, Clone)]
 pub struct AgentCollection {
     agents: Vec<Agent>,
-    fundamentalists: Vec<f32>,
+    fundamentalists: Vec<Vec<f32>>,
 }
 
 impl AgentCollection {
@@ -95,9 +108,15 @@ impl AgentCollection {
             agents: repeat_with(|| Agent::new(config, &mut rng))
                 .take(config.agent.agent_count)
                 .collect(),
-            fundamentalists: repeat_with(|| rng.gen::<bool>() as usize as f32)
-                .take(config.agent.fundamentalist_count)
-                .collect(),
+            fundamentalists: repeat_with(|| {
+                thread_rng()
+                    .sample_iter(Standard)
+                    .map(|b: bool| b as usize as f32)
+                    .take(config.market.market_count)
+                    .collect()
+            })
+            .take(config.agent.fundamentalist_count)
+            .collect(),
         }
     }
 
@@ -110,8 +129,8 @@ impl AgentCollection {
     }
 
     /// Call this function first, once every step.
-    pub fn step(&mut self) {
-        self.dga();
+    pub fn step(&mut self, markets: &[GenoaMarket], step: usize) {
+        self.dga(markets, step);
     }
 
     /// Call this function after [`Self::step`], once for every market.
@@ -144,11 +163,15 @@ impl AgentCollection {
 
     /// Give the state of either an agent or a fundamentalist. `idx` must be in
     /// range 0 to len(agents) + len(fundamentalists)
-    pub fn influence_at(&self, idx: usize, market: MarketId) -> f32 {
+    pub fn influence_at_market(&self, idx: usize, market: MarketId) -> f32 {
+        self.influence_at(idx)[market]
+    }
+
+    pub fn influence_at(&self, idx: usize) -> &[f32] {
         if idx < self.agents.len() {
-            self.agents[idx].state[market]
+            &self.agents[idx].state
         } else {
-            self.fundamentalists[idx - self.agents.len()]
+            &self.fundamentalists[idx - self.agents.len()]
         }
     }
 
@@ -156,40 +179,102 @@ impl AgentCollection {
     /// and their own interests. At every time step, the interest for a market
     /// is updated based on performance (overall profits from a market), news
     /// and random noise.
-    pub fn dga(&mut self) {
-        // let m_id = market;
-        // let mut market_noise: f32;
-
+    pub fn dga(&mut self, markets: &[GenoaMarket], step: usize) {
         // More efficient this way.
         let mut rng = thread_rng();
 
         let range = Uniform::from(0..self.agents.len() + self.fundamentalists.len());
-        let market_count = self.agents.first().expect("No agents.").assets.len();
+        let market_count = markets.len();
 
         for idx in 0..self.agents.len() {
-            let influencer_count = self.agents[idx].influencers_count;
+            // Reflect on old influences possibly adding friends.
+            let reflection_delay = self.agents[idx].reflection_delay;
+            if let Some(refl_step) = step.checked_sub(reflection_delay) {
+                let market_movement = markets
+                    .iter()
+                    .map(|m| m.price_ago(reflection_delay))
+                    .collect::<Vec<_>>();
+
+                let market_movement_mean =
+                    market_movement.iter().sum::<f32>().div(market_count as f32);
+
+                let market_movement_sd = market_movement
+                    .iter()
+                    .map(|x| (x - market_movement_mean) * (x - market_movement_mean))
+                    .sum::<f32>()
+                    .div((market_count - 1) as f32)
+                    .sqrt();
+
+                let agent = &mut self.agents[idx];
+                let influences = &mut agent.influences;
+                while influences
+                    .front()
+                    .map(|b| b.2 <= refl_step)
+                    .unwrap_or_default()
+                {
+                    let (i_agent, influence, _) = influences.pop_front().unwrap();
+
+                    let influence_mean = influence.iter().sum::<f32>().div(market_count as f32);
+
+                    let influence_sd = influence
+                        .iter()
+                        .map(|x| (x - influence_mean) * (x - influence_mean))
+                        .sum::<f32>()
+                        .div((market_count - 1) as f32)
+                        .sqrt();
+
+                    let correlation = market_movement
+                        .iter()
+                        .zip(influence.iter())
+                        .map(|(&mm, &i)| {
+                            mm * i - market_count as f32 * influence_sd * market_movement_sd
+                        })
+                        .sum::<f32>()
+                        .div((market_count - 1) as f32 * influence_sd * market_movement_sd);
+
+                    if correlation > agent.friend_threshold {
+                        agent.friends.push_back(i_agent);
+                        if agent.friends.len() > agent.max_friends {
+                            agent.friends.pop_front();
+                        }
+                    }
+                }
+            }
+
             // Check if the current agent is to be influenced based on the influence probability.
             if rng.gen::<f32>() < self.agents[idx].influence_probability {
                 // Generate our influencers
-                let influencers = rng
+                let mut influencers = rng
                     .clone()
                     .sample_iter(&range)
                     // Make sure we do not influence ourselves
                     .filter(|&i: &usize| i != idx)
-                    .take(influencer_count)
+                    .take(self.agents[idx].influencers_count)
                     .collect::<Vec<_>>();
+
+                // Also be influenced by friends
+                for &f in &self.agents[idx].friends {
+                    if rng.gen::<f32>() < self.agents[idx].friend_influence_probability {
+                        influencers.push(f);
+                    }
+                }
 
                 // Influence all markets
                 for market in 0..market_count {
                     // Take random agents and sum their influence.
                     let influence_sum = influencers
                         .iter()
-                        .map(|&i| self.influence_at(i, market))
+                        .map(|&i| self.influence_at_market(i, market))
                         .sum::<f32>();
 
-                    let influence = influence_sum / influencer_count as f32;
+                    let influence = influence_sum / influencers.len() as f32;
 
                     self.agents[idx].state[market] = influence.round();
+                }
+
+                for i in influencers {
+                    let influence = self.influence_at(i).to_vec();
+                    self.agents[idx].influences.push_back((i, influence, step));
                 }
             }
         }

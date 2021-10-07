@@ -42,7 +42,7 @@ struct RunCommand {
 
     /// The length of each simulation run in steps.
     #[clap(short = 'n', long, default_value = "10000")]
-    run_length: u32,
+    run_length: usize,
 
     /// The length of each simulation run in steps.
     #[clap(short, long, default_value = "1")]
