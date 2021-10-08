@@ -1,58 +1,92 @@
 [market]
+# The amount of markets.
 market_count = 1
+
+# The initial price at the market. This should be balanced, so the total amount
+# of cash and value of assets are equal.
 initial_price = 100.0
+
+# The initial volatility of each market. Technically zero would be more correct,
+# this leads to all agents producing the same limit price
 initial_volatility = 0.003
+
+# The amount of prices stored in the history. This value influences how the
+# volatility is computed.
 price_history_count = 20
 
 [agent]
+# Amount of fundamentalists in the simulation.
 fundamentalist_count = 100
+
+# Amount of non-fundamentailst agents in the simulation.
 agent_count = 1000
 
+# The amount of influencers that influence the agent every step. Only matters if
+# the agent is influenced at all.
 [agent.influencers_count]
 distribution = 'Normal'
 mean = 1.0
 sd = 0.0
 
+# The probability that the agent will place any order in a market.
 [agent.order_probability]
 distribution = 'Normal'
 mean = 1.0
 sd = 0.0
 
+# The probability that an agent will be influenced by anyone this step.
 [agent.influence_probability]
 distribution = 'Normal'
 mean = 0.8
 sd = 0.0
 
+# How long, until the agent reflects on trades made, and potentially adds
+# friends. Needs to be smaller then `config.market.price_history_count`.
 [agent.reflection_delay]
 distribution = 'Normal'
 mean = 10.0
 sd = 0.0
 
+# The threshold above witch an influence becomes a friend. After a person
+# has been influenced and `reflection_delay` time has passed, the pearson
+# correlation between the market change and the influence will be
+# computed. Should this correlation be greater than the threshold, the
+# person will become a friend.
+#
+# To disable friends, set this to anything above 1.
 [agent.friend_threshold]
 distribution = 'Normal'
 mean = 0.6
 sd = 0.0
 
+# The maximum number of friends. Should there be more firends, the oldest ones
+# will be removed.
 [agent.max_friends]
 distribution = 'Normal'
 mean = 0.0
 sd = 0.0
 
+# Chance of being influenced by a particular friend. This only matters
+# when the agent is being influenced at all.
 [agent.friend_influence_probability]
 distribution = 'Normal'
 mean = 0.4
 sd = 0.0
 
+# Initial amount of cash an agent holds, should be balanced with the value
+# of stocks.
 [agent.initial_cash]
 distribution = 'Normal'
 mean = 3000.0
 sd = 0.0
 
+# Initial amount of assets/stocks the agent holds in every market.
 [agent.initial_assets]
 distribution = 'Normal'
 mean = 30.0
 sd = 0.0
 
+# The initial belief the agent has about each market. Zero is bad (sell), one is good (buy).
 [agent.initial_state]
 distribution = 'Bernoulli'
 p = 0.5
