@@ -1,3 +1,5 @@
+use rand::{prelude::SliceRandom, thread_rng};
+
 use crate::{
     agent::AgentCollection,
     config::Config,
@@ -22,12 +24,19 @@ impl Simulation {
     }
 
     pub fn step(&mut self, step: usize, reporter: &mut Reporter) {
+        // just runs dga
         self.agents.step(&self.markets[..], step);
-        for m in &mut self.markets {
+
+        // Runs market logic (we shuffle the market access)
+        let mut markets = self.markets.iter_mut().collect::<Vec<_>>();
+        markets.shuffle(&mut thread_rng());
+
+        for m in markets {
             self.agents.step_market(m);
             m.step(&mut self.agents);
         }
 
+        // report values
         for (i, m) in self.markets.iter_mut().enumerate() {
             let i = i as u32;
             report!(reporter, "price"[i], m.price() as f64);

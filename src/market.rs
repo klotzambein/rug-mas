@@ -58,7 +58,7 @@ impl GenoaMarket {
 
     fn compute_volatility(&mut self) {
         if self.price_history.len() < 3 {
-            // We need at least thre values to compute the log returns
+            // We need at least three values to compute the log returns
             return;
         }
 
@@ -84,7 +84,7 @@ impl GenoaMarket {
         self.volatility = volatility;
     }
 
-    /// This function assumes thath the orders are sortet
+    /// This function assumes that the orders are sorted
     fn execute_sell_orders(
         &mut self,
         mut amount_executed: u32,
@@ -103,7 +103,7 @@ impl GenoaMarket {
         }
     }
 
-    /// This function assumes thath the orders are sortet
+    /// This function assumes that the orders are sorted
     fn execute_buy_orders(
         &mut self,
         mut amount_executed: u32,
@@ -196,7 +196,7 @@ impl GenoaMarket {
             .unwrap();
     }
 
-    /// This function assumes that the orders are sortet and does not record the price
+    /// This function assumes that the orders are sorted and does not record the price
     fn compute_price(&self) -> Option<(f32, u32)> {
         let mut bos = self.buy_orders.iter();
         let bo0 = bos.next()?;
@@ -304,7 +304,7 @@ impl GenoaMarket {
         self.news_indicator
     }
 
-    /// Returns profit since last timestep as a percentage.
+    /// Returns profit since last time step as a percentage.
     pub fn get_markup(&self) -> f32 {
         let history_len = self.price_history.len();
         (self.price_history[history_len] - self.price_history[history_len - 1])

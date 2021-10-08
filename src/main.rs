@@ -16,7 +16,7 @@ pub mod market;
 pub mod report;
 pub mod simulation;
 
-/// Application to investigate market behaviour in gossiping agents.
+/// Application to investigate market behavior in gossiping agents.
 #[derive(Clap)]
 #[clap(version = "0.1", author = "Robin Kock <contact@robin-kock.com>")]
 #[clap(setting = AppSettings::ColoredHelp)]
@@ -46,7 +46,7 @@ struct RunCommand {
 
     /// The length of each simulation run in steps.
     #[clap(short, long, default_value = "1")]
-    repetitons: u32,
+    repetitions: u32,
 }
 
 /// Export the default configuration.
@@ -78,7 +78,7 @@ fn run_simulation(cmd: RunCommand) -> Result<(), Box<dyn Error>> {
         .map(Config::load)
         .unwrap_or_else(|| Ok(Config::default()))?;
 
-    for _run_index in 0..cmd.repetitons {
+    for _run_index in 0..cmd.repetitions {
         let mut reporter = Reporter::new();
         let mut sim = Simulation::new(&config);
         for step in 0..cmd.run_length {

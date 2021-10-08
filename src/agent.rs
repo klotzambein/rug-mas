@@ -20,7 +20,7 @@ pub type AgentId = usize;
 #[derive(Debug, Clone)]
 pub struct Agent {
     cash: f32,
-    /// Vector representing the ammount of assets an agent holds.
+    /// Vector representing the amount of assets an agent holds.
     assets: Vec<u32>,
 
     // /// Value that represents the market in which an agent invests next.
@@ -30,17 +30,17 @@ pub struct Agent {
 
     // /// Variable describing how likely an agent is to make informed decisions vs following the crowd.
     // fundamentalism_ratio: f32,
-    /// Value that describes how likely and agent is to place orders at each timestep.
+    /// Value that describes how likely and agent is to place orders at each time step.
     order_probability: Vec<f32>,
 
-    /// Value that describes how likely and agent is to be influenced at each timestep.
+    /// Value that describes how likely and agent is to be influenced at each time step.
     influence_probability: f32,
 
     /// Value that determines how many agents a single agent should be influenced from.
     influencers_count: usize,
 
     reflection_delay: usize,
-    influences: VecDeque<(AgentId, Vec<f32>, usize)>,
+    influences: VecDeque<Influence>,
     friend_threshold: f32,
     max_friends: usize,
     friend_influence_probability: f32,
@@ -93,6 +93,13 @@ impl Agent {
             .checked_sub(asset_quantity)
             .expect("Agent ran out of asset");
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct Influence {
+    influencer: AgentId,
+    state: Vec<f32>,
+    step: usize,
 }
 
 #[derive(Debug, Clone)]
@@ -156,9 +163,9 @@ impl AgentCollection {
     }
 
     pub fn cash_median(&self) -> f32 {
-        let mut cashs: Vec<_> = self.agents.iter().map(|a| a.cash).collect();
-        cashs.sort_by(|a, b| a.partial_cmp(b).unwrap());
-        cashs[cashs.len() / 2]
+        let mut cash: Vec<_> = self.agents.iter().map(|a| a.cash).collect();
+        cash.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        cash[cash.len() / 2]
     }
 
     /// Give the state of either an agent or a fundamentalist. `idx` must be in
@@ -192,7 +199,7 @@ impl AgentCollection {
             if let Some(refl_step) = step.checked_sub(reflection_delay) {
                 let market_movement = markets
                     .iter()
-                    .map(|m| m.price_ago(reflection_delay))
+                    .map(|m| m.price() - m.price_ago(reflection_delay))
                     .collect::<Vec<_>>();
 
                 let market_movement_mean =
@@ -209,14 +216,15 @@ impl AgentCollection {
                 let influences = &mut agent.influences;
                 while influences
                     .front()
-                    .map(|b| b.2 <= refl_step)
+                    .map(|i| i.step <= refl_step)
                     .unwrap_or_default()
                 {
-                    let (i_agent, influence, _) = influences.pop_front().unwrap();
+                    let i = influences.pop_front().unwrap();
 
-                    let influence_mean = influence.iter().sum::<f32>().div(market_count as f32);
+                    let influence_mean = i.state.iter().sum::<f32>().div(market_count as f32);
 
-                    let influence_sd = influence
+                    let influence_sd = i
+                        .state
                         .iter()
                         .map(|x| (x - influence_mean) * (x - influence_mean))
                         .sum::<f32>()
@@ -225,7 +233,7 @@ impl AgentCollection {
 
                     let correlation = market_movement
                         .iter()
-                        .zip(influence.iter())
+                        .zip(i.state.iter())
                         .map(|(&mm, &i)| {
                             mm * i - market_count as f32 * influence_sd * market_movement_sd
                         })
@@ -233,7 +241,7 @@ impl AgentCollection {
                         .div((market_count - 1) as f32 * influence_sd * market_movement_sd);
 
                     if correlation > agent.friend_threshold {
-                        agent.friends.push_back(i_agent);
+                        agent.friends.push_back(i.influencer);
                         if agent.friends.len() > agent.max_friends {
                             agent.friends.pop_front();
                         }
@@ -274,7 +282,11 @@ impl AgentCollection {
 
                 for i in influencers {
                     let influence = self.influence_at(i).to_vec();
-                    self.agents[idx].influences.push_back((i, influence, step));
+                    self.agents[idx].influences.push_back(Influence {
+                        influencer: i,
+                        state: influence,
+                        step,
+                    });
                 }
             }
         }
