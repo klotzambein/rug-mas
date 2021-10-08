@@ -19,14 +19,14 @@ pub type AgentId = usize;
 
 #[derive(Debug, Clone)]
 pub struct Agent {
-    cash: f32,
+    pub cash: f32,
     /// Vector representing the amount of assets an agent holds.
-    assets: Vec<u32>,
+    pub assets: Vec<u32>,
 
     // /// Value that represents the market in which an agent invests next.
     // market_preference: u32,
     /// Vector encapsulating each market preference of an agent. Contains probabilities between [0, 1].
-    state: Vec<f32>,
+    pub state: Vec<f32>,
 
     // /// Variable describing how likely an agent is to make informed decisions vs following the crowd.
     // fundamentalism_ratio: f32,
@@ -46,7 +46,7 @@ pub struct Agent {
     friend_influence_probability: f32,
 
     /// Friend list containing trust values for other agents.
-    friends: VecDeque<AgentId>,
+    pub friends: VecDeque<AgentId>,
     // /// Value that describes how likely an agent is to change its preferences.
     // change_probability: f32,
 }

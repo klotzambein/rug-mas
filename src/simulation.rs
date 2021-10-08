@@ -43,6 +43,34 @@ impl Simulation {
             report!(reporter, "volatility"[i], m.volatility() as f64);
         }
 
+        for agent in 0..10 {
+            report!(
+                reporter,
+                "agent_cash"[agent as u32],
+                self.agents.agent(agent).cash as f64
+            );
+            report!(
+                reporter,
+                "agent_total_assets"[agent as u32],
+                self.agents.agent(agent).assets.iter().sum::<u32>() as f64
+            );
+            report!(
+                reporter,
+                "agent_assets_0"[agent as u32],
+                self.agents.agent(agent).assets[0] as f64
+            );
+            report!(
+                reporter,
+                "agent_state_0"[agent as u32],
+                self.agents.agent(agent).state[0] as f64
+            );
+            report!(
+                reporter,
+                "agent_friend_count"[agent as u32],
+                self.agents.agent(agent).friends.len() as f64
+            );
+        }
+
         report!(reporter, "median_cash", self.agents.cash_median() as f64);
         // report!(reporter, "total cash", self.agents.total_cash());
         // report!(reporter, "total assets", self.agents.total_assets(0) as f64);
