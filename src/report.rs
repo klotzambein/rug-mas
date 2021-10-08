@@ -140,7 +140,7 @@ impl Reporter {
 
             writeln!(file).unwrap();
             write!(file, "{}", step).unwrap();
-            
+
             for c in &cols {
                 let val = self.per_step[c].get(step).copied();
                 if val.is_some() {

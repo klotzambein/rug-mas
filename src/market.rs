@@ -4,7 +4,7 @@ use plotters::{
     prelude::{BitMapBackend, ChartBuilder, IntoDrawingArea, LineSeries, PathElement},
     style::{Color, IntoFont, BLACK, GREEN, RED, WHITE},
 };
-use rand::prelude::{thread_rng, Distribution, Rng};
+use rand::prelude::{thread_rng, Distribution};
 
 use crate::{
     agent::{AgentCollection, AgentId},
