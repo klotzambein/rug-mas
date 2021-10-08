@@ -2,3 +2,5 @@ target
 *.png
 *.svg
 *.pdf
+*.csv
+*.zip

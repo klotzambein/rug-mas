@@ -1,0 +1,58 @@
+[market]
+market_count = 1
+initial_price = 100.0
+initial_volatility = 0.003
+price_history_count = 20
+
+[agent]
+fundamentalist_count = 100
+agent_count = 1000
+
+[agent.influencers_count]
+distribution = 'Normal'
+mean = 1.0
+sd = 0.0
+
+[agent.order_probability]
+distribution = 'Normal'
+mean = 1.0
+sd = 0.0
+
+[agent.influence_probability]
+distribution = 'Normal'
+mean = 0.8
+sd = 0.0
+
+[agent.reflection_delay]
+distribution = 'Normal'
+mean = 10.0
+sd = 0.0
+
+[agent.friend_threshold]
+distribution = 'Normal'
+mean = 0.6
+sd = 0.0
+
+[agent.max_friends]
+distribution = 'Normal'
+mean = 5.0
+sd = 0.0
+
+[agent.friend_influence_probability]
+distribution = 'Normal'
+mean = 0.4
+sd = 0.0
+
+[agent.initial_cash]
+distribution = 'Normal'
+mean = 3000.0
+sd = 0.0
+
+[agent.initial_assets]
+distribution = 'Normal'
+mean = 30.0
+sd = 0.0
+
+[agent.initial_state]
+distribution = 'Bernoulli'
+p = 0.5

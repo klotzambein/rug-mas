@@ -1,4 +1,6 @@
-use std::{cmp::Ordering, collections::HashMap, fmt::Write, hash::Hash};
+use std::{
+    cmp::Ordering, collections::HashMap, fmt::Write, hash::Hash, io::Write as IoWrite, path::Path,
+};
 
 use plotters::{
     coord::Shift,
@@ -122,8 +124,35 @@ impl Reporter {
         }
     }
 
-    pub fn write_csv(&self) {
-        todo!()
+    pub fn write_csv(&self, path: impl AsRef<Path>) {
+        let mut cols = self.per_step.keys().collect::<Vec<_>>();
+        cols.sort_by_key(|k| k.to_string());
+
+        let mut file = std::fs::File::create(path).expect("can't create csv file");
+
+        write!(file, "step").unwrap();
+        for c in &cols {
+            write!(file, ",{}", c.to_string()).unwrap();
+        }
+
+        for step in 0.. {
+            let mut stop = true;
+
+            writeln!(file).unwrap();
+            write!(file, "{}", step).unwrap();
+            
+            for c in &cols {
+                let val = self.per_step[c].get(step).copied();
+                if val.is_some() {
+                    stop = false;
+                }
+                write!(file, ",{}", val.unwrap_or(f64::NAN)).unwrap();
+            }
+
+            if stop {
+                break;
+            }
+        }
     }
 
     pub(crate) fn set_step(&mut self, step: usize) {

@@ -2,10 +2,10 @@ use std::{error::Error, path::PathBuf};
 
 use clap::{AppSettings, Clap};
 use config::Config;
-use plotters::{
-    prelude::{BitMapBackend, IntoDrawingArea},
-    style::WHITE,
-};
+// use plotters::{
+//     prelude::{BitMapBackend, IntoDrawingArea},
+//     style::WHITE,
+// };
 use report::Reporter;
 use simulation::Simulation;
 use toml::to_string_pretty;
@@ -75,6 +75,7 @@ fn write_config(cmd: WriteConfigCommand) -> Result<(), Box<dyn Error>> {
 fn run_simulation(cmd: RunCommand) -> Result<(), Box<dyn Error>> {
     let config = cmd
         .config
+        .as_ref()
         .map(Config::load)
         .unwrap_or_else(|| Ok(Config::default()))?;
 
@@ -85,9 +86,19 @@ fn run_simulation(cmd: RunCommand) -> Result<(), Box<dyn Error>> {
             reporter.set_step(step);
             sim.step(step, &mut reporter);
         }
-        let drawing_area = BitMapBackend::new("plot.png", (1024, 512)).into_drawing_area();
-        drawing_area.fill(&WHITE).expect("Can't fill bitmap");
-        reporter.render_chart(drawing_area);
+        // let drawing_area = BitMapBackend::new("plot.png", (1024, 512)).into_drawing_area();
+        // drawing_area.fill(&WHITE).expect("Can't fill bitmap");
+        // reporter.render_chart(drawing_area);
+        let mut name = cmd
+            .config
+            .as_ref()
+            .and_then(|p| p.file_name())
+            .and_then(|n| n.to_str())
+            .and_then(|n| n.split('.').next())
+            .unwrap_or("result")
+            .to_owned();
+        name += ".csv";
+        reporter.write_csv(name)
     }
 
     Ok(())
