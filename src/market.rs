@@ -37,7 +37,7 @@ impl GenoaMarket {
 
     /// Call this after all orders have been submitted, this will execute orders, as well as
     /// computing a new price and volatility.
-    pub fn step(&mut self, agents: &mut AgentCollection) {
+    pub fn step<const M: usize>(&mut self, agents: &mut AgentCollection<M>) {
         self.sort_orders();
 
         let (price, amount_executed) = self.compute_price().unwrap_or_else(|| (self.price(), 0));
@@ -82,10 +82,10 @@ impl GenoaMarket {
     }
 
     /// This function assumes that the orders are sorted
-    fn execute_sell_orders(
+    fn execute_sell_orders<const M: usize>(
         &mut self,
         mut amount_executed: u32,
-        agents: &mut AgentCollection,
+        agents: &mut AgentCollection<M>,
         price: f32,
     ) {
         for so in &self.sell_orders {
@@ -101,10 +101,10 @@ impl GenoaMarket {
     }
 
     /// This function assumes that the orders are sorted
-    fn execute_buy_orders(
+    fn execute_buy_orders<const M: usize>(
         &mut self,
         mut amount_executed: u32,
-        agents: &mut AgentCollection,
+        agents: &mut AgentCollection<M>,
         price: f32,
     ) {
         for bo in &self.buy_orders {

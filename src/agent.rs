@@ -9,6 +9,7 @@ use std::{collections::VecDeque, iter::repeat_with, ops::Div};
 
 use rand::{distributions::Uniform, prelude::Rng, prelude::ThreadRng, thread_rng};
 use rand_distr::Standard;
+use smallvec::SmallVec;
 
 use crate::{
     config::Config,
@@ -18,20 +19,20 @@ use crate::{
 pub type AgentId = usize;
 
 #[derive(Debug, Clone)]
-pub struct Agent {
+pub struct Agent<const M: usize> {
     pub cash: f32,
     /// Vector representing the amount of assets an agent holds.
-    pub assets: Vec<u32>,
+    pub assets: SmallVec<[u32; M]>,
 
     // /// Value that represents the market in which an agent invests next.
     // market_preference: u32,
     /// Vector encapsulating each market preference of an agent. Contains probabilities between [0, 1].
-    pub state: Vec<f32>,
+    pub state: SmallVec<[f32; M]>,
 
     // /// Variable describing how likely an agent is to make informed decisions vs following the crowd.
     // fundamentalism_ratio: f32,
     /// Value that describes how likely and agent is to place orders at each time step.
-    order_probability: Vec<f32>,
+    order_probability: SmallVec<[f32; M]>,
 
     /// Value that describes how likely and agent is to be influenced at each time step.
     influence_probability: f32,
@@ -51,8 +52,8 @@ pub struct Agent {
     // change_probability: f32,
 }
 
-impl Agent {
-    pub fn new(config: &Config, rng: &mut ThreadRng) -> Agent {
+impl<const M: usize> Agent<M> {
+    pub fn new(config: &Config, rng: &mut ThreadRng) -> Agent<M> {
         Agent {
             cash: config.agent.initial_cash.sample_f32(rng),
             // market_preference: 0,
@@ -103,13 +104,13 @@ pub struct Influence {
 }
 
 #[derive(Debug, Clone)]
-pub struct AgentCollection {
-    agents: Vec<Agent>,
-    fundamentalists: Vec<Vec<f32>>,
+pub struct AgentCollection<const M: usize> {
+    agents: Vec<Agent<M>>,
+    fundamentalists: Vec<SmallVec<[f32; M]>>,
 }
 
-impl AgentCollection {
-    pub fn new(config: &Config) -> AgentCollection {
+impl<const M: usize> AgentCollection<M> {
+    pub fn new(config: &Config) -> AgentCollection<M> {
         let mut rng = thread_rng();
         AgentCollection {
             agents: repeat_with(|| Agent::new(config, &mut rng))
@@ -127,12 +128,16 @@ impl AgentCollection {
         }
     }
 
-    pub fn agent(&self, id: AgentId) -> &Agent {
+    pub fn agent(&self, id: AgentId) -> &Agent<M> {
         &self.agents[id as usize]
     }
 
-    pub fn agent_mut(&mut self, id: AgentId) -> &mut Agent {
+    pub fn agent_mut(&mut self, id: AgentId) -> &mut Agent<M> {
         &mut self.agents[id as usize]
+    }
+
+    pub fn agents(&self) -> &[Agent<M>] {
+        &self.agents[..]
     }
 
     /// Call this function first, once every step.

@@ -76,9 +76,12 @@ impl Reporter {
         let chart_height = chart_count / chart_width + (chart_count % chart_width != 0) as usize;
         let das = da.split_evenly((chart_width, chart_height));
 
-        for ((target, series), da) in self.per_step.iter().zip(das) {
+        let mut cols = self.per_step.keys().collect::<Vec<_>>();
+        cols.sort_by_key(|k| k.to_string());
+
+        for ((target, series), da) in cols.iter().map(|c| (c, &self.per_step[c])).zip(das) {
             let label = target.to_string();
-            let color = BLACK.mix(0.3);
+            let color = BLACK.mix(0.7);
 
             let max_step = series.len();
 

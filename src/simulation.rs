@@ -7,20 +7,30 @@ use crate::{
     report::{report, Reporter},
 };
 
+pub const AGENT_PER_MARKET_INLINE_THRESHOLD: usize = 5;
+
 #[derive(Debug, Clone)]
 pub struct Simulation {
     markets: Vec<GenoaMarket>,
-    agents: AgentCollection,
+    agents: AgentCollection<AGENT_PER_MARKET_INLINE_THRESHOLD>,
 }
 
 impl Simulation {
     pub fn new(config: &Config) -> Simulation {
         Simulation {
-            markets: std::iter::repeat_with(|| GenoaMarket::new(config, 0))
-                .take(config.market.market_count)
+            markets: (0..config.market.market_count)
+                .map(|i| GenoaMarket::new(config, i))
                 .collect(),
             agents: AgentCollection::new(config),
         }
+    }
+
+    pub fn agents(&self) -> &AgentCollection<AGENT_PER_MARKET_INLINE_THRESHOLD> {
+        &self.agents
+    }
+
+    pub fn markets(&self) -> &[GenoaMarket] {
+        &self.markets[..]
     }
 
     pub fn step(&mut self, step: usize, reporter: &mut Reporter) {
