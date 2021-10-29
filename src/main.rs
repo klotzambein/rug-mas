@@ -14,6 +14,7 @@ use report::Reporter;
 use simulation::Simulation;
 use speedy2d::{Window, window::{UserEventSender, WindowCreationOptions, WindowSize}};
 use toml::to_string_pretty;
+use window::Data;
 
 pub mod agent;
 pub mod config;
@@ -100,10 +101,10 @@ fn run_simulation(cmd: RunCommand) -> Result<(), Box<dyn Error>> {
     if cmd.window {
         let size = WindowSize::MarginPhysicalPixels(100);
         let opts = WindowCreationOptions::new_windowed(size, None);
-        let window = Window::<Simulation>::new_with_user_events("Title", opts).unwrap();
+        let window = Window::<Data>::new_with_user_events("Title", opts).unwrap();
         let event_sender = window.create_user_event_sender();
 
-        thread::spawn(move || sim_loop(cmd, config, Some((5, event_sender))));
+        thread::spawn(move || sim_loop(cmd, config, Some((1, event_sender))));
 
         window.run_loop(window::MyWindowHandler::default());
     } else {
@@ -113,7 +114,7 @@ fn run_simulation(cmd: RunCommand) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn sim_loop(cmd: RunCommand, config: Config, event_sender: Option<(usize, UserEventSender<Simulation>)>) {
+fn sim_loop(cmd: RunCommand, config: Config, event_sender: Option<(usize, UserEventSender<Data>)>) {
     for _run_index in 0..cmd.repetitions {
         let mut reporter = Reporter::new();
         let mut sim = Simulation::new(&config);
@@ -122,8 +123,13 @@ fn sim_loop(cmd: RunCommand, config: Config, event_sender: Option<(usize, UserEv
             sim.step(step, &mut reporter);
             
             if let Some((update_rate, es)) = &event_sender {
+                std::thread::sleep(std::time::Duration::from_secs_f32(0.1));
                 if step % update_rate == 0 {
-                    es.send_event(sim.clone()).unwrap();
+                    let data = Data {
+                        sim: sim.clone(),
+                        report: reporter.clone(),
+                    };
+                    es.send_event(data).unwrap();
                 }
             }
 

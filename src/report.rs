@@ -67,9 +67,9 @@ impl Reporter {
         }
     }
 
-    pub fn render_chart<DA>(&self, da: DrawingArea<DA, Shift>)
+    pub fn render_chart<DB>(&self, da: DrawingArea<DB, Shift>)
     where
-        DA: DrawingBackend,
+        DB: DrawingBackend,
     {
         let chart_count = self.per_step.len();
         let chart_width = (chart_count as f64).sqrt().round() as usize;
