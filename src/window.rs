@@ -38,7 +38,7 @@ impl WindowHandler<Data> for MyWindowHandler {
 
         graphics.clear_screen(Color::WHITE);
         let window = Rect::from_size(self.size);
-        let (content_agent, content_plots) = window.inset(3.0).split_horizontal_at(0.65);
+        let (content_agent, content_plots) = window.inset(3.0).split_horizontal_at(1.0);
 
         let agents = sim.agents().agents();
         let agent_count = agents.len();
@@ -50,7 +50,7 @@ impl WindowHandler<Data> for MyWindowHandler {
             graphics.draw_rectangle(rect.speedy2d(), Color::BLACK);
             let rect = rect.inset_percentage(5.0);
 
-            let count = 1 + agent.assets.len();
+            let count = 2 + agent.assets.len();
             let mut rects = rect.split_vertical(count);
 
             let val = agent.cash.log10() / 5.0; // up to 5 digits
@@ -73,13 +73,24 @@ impl WindowHandler<Data> for MyWindowHandler {
                     colors[j],
                 );
             }
+            for (j, (a, r)) in agent
+                .state
+                .iter()
+                .copied()
+                .zip(rects.next().unwrap().split_horizontal(agent.state.len()))
+                .enumerate()
+            {
+                let color = colors[j];
+                let color = Color::from_rgb(color.r() * a, color.g() * a, color.b() * a);
+                graphics.draw_rectangle(r.inset_percentage(15.0).speedy2d(), color);
+            }
         }
 
-        let backend = PlottersBackendSpeedy {
-            rect: content_plots,
-            g: graphics,
-        };
-        data.report.render_chart(backend.into_drawing_area());
+        // let backend = PlottersBackendSpeedy {
+        //     rect: content_plots,
+        //     g: graphics,
+        // };
+        // data.report.render_chart(backend.into_drawing_area());
     }
 
     fn on_user_event(&mut self, helper: &mut WindowHelper<Data>, user_event: Data) {

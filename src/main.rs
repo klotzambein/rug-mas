@@ -123,11 +123,11 @@ fn sim_loop(cmd: RunCommand, config: Config, event_sender: Option<(usize, UserEv
             sim.step(step, &mut reporter);
             
             if let Some((update_rate, es)) = &event_sender {
-                std::thread::sleep(std::time::Duration::from_secs_f32(0.1));
+                std::thread::sleep(std::time::Duration::from_secs_f32(0.07));
                 if step % update_rate == 0 {
                     let data = Data {
                         sim: sim.clone(),
-                        report: reporter.clone(),
+                        report: Reporter::new(),// reporter.clone(),
                     };
                     es.send_event(data).unwrap();
                 }
