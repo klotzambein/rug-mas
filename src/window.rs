@@ -34,6 +34,10 @@ impl WindowHandler<Data> for MyWindowHandler {
             return;
         };
 
+        if self.size.magnitude_squared() < 2.0 {
+            return;
+        }
+
         let sim = &data.sim;
 
         graphics.clear_screen(Color::WHITE);
