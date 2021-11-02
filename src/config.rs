@@ -29,7 +29,7 @@ pub struct MarketConfig {
 impl Default for MarketConfig {
     fn default() -> Self {
         Self {
-            market_count: 1,
+            market_count: 3,
             initial_price: 100.0,
             initial_volatility: 0.003,
             price_history_count: 20,
@@ -100,7 +100,7 @@ impl Default for AgentConfig {
             initial_state: Distribution::Bernoulli { p: 0.5 },
             reflection_delay: Distribution::static_value(10.0),
             friend_threshold: Distribution::static_value(0.6),
-            max_friends: Distribution::static_value(0.0),
+            max_friends: Distribution::static_value(10.0),
             friend_influence_probability: Distribution::static_value(0.4),
         }
     }

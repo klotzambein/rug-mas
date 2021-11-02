@@ -46,6 +46,9 @@ impl Simulation {
             m.step(&mut self.agents);
         }
 
+        // Update friends
+        self.agents.update_friends(&self.markets[..]);
+
         // report values
         for (i, m) in self.markets.iter_mut().enumerate() {
             let i = i as u32;

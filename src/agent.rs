@@ -47,7 +47,7 @@ pub struct Agent<const M: usize> {
     friend_influence_probability: f32,
 
     /// Friend list containing trust values for other agents.
-    pub friends: VecDeque<AgentId>,
+    pub friends: VecDeque<Friend>,
     // /// Value that describes how likely an agent is to change its preferences.
     // change_probability: f32,
 }
@@ -101,6 +101,12 @@ pub struct Influence {
     influencer: AgentId,
     state: Vec<f32>,
     step: usize,
+}
+
+#[derive(Debug, Clone)]
+pub struct Friend {
+    agent: AgentId,
+    score: i32,
 }
 
 #[derive(Debug, Clone)]
@@ -199,61 +205,6 @@ impl<const M: usize> AgentCollection<M> {
         let market_count = markets.len();
 
         for idx in 0..self.agents.len() {
-            // Reflect on old influences possibly adding friends.
-            let reflection_delay = self.agents[idx].reflection_delay;
-            if let Some(refl_step) = step.checked_sub(reflection_delay) {
-                let market_movement = markets
-                    .iter()
-                    .map(|m| m.price() - m.price_ago(reflection_delay))
-                    .collect::<Vec<_>>();
-
-                let market_movement_mean =
-                    market_movement.iter().sum::<f32>().div(market_count as f32);
-
-                let market_movement_sd = market_movement
-                    .iter()
-                    .map(|x| (x - market_movement_mean) * (x - market_movement_mean))
-                    .sum::<f32>()
-                    .div((market_count - 1) as f32)
-                    .sqrt();
-
-                let agent = &mut self.agents[idx];
-                let influences = &mut agent.influences;
-                while influences
-                    .front()
-                    .map(|i| i.step <= refl_step)
-                    .unwrap_or_default()
-                {
-                    let i = influences.pop_front().unwrap();
-
-                    let influence_mean = i.state.iter().sum::<f32>().div(market_count as f32);
-
-                    let influence_sd = i
-                        .state
-                        .iter()
-                        .map(|x| (x - influence_mean) * (x - influence_mean))
-                        .sum::<f32>()
-                        .div((market_count - 1) as f32)
-                        .sqrt();
-
-                    let correlation = market_movement
-                        .iter()
-                        .zip(i.state.iter())
-                        .map(|(&mm, &i)| {
-                            mm * i - market_count as f32 * influence_sd * market_movement_sd
-                        })
-                        .sum::<f32>()
-                        .div((market_count - 1) as f32 * influence_sd * market_movement_sd);
-
-                    if correlation > agent.friend_threshold {
-                        agent.friends.push_back(i.influencer);
-                        if agent.friends.len() > agent.max_friends {
-                            agent.friends.pop_front();
-                        }
-                    }
-                }
-            }
-
             // Check if the current agent is to be influenced based on the influence probability.
             if rng.gen::<f32>() < self.agents[idx].influence_probability {
                 // Generate our influencers
@@ -266,9 +217,9 @@ impl<const M: usize> AgentCollection<M> {
                     .collect::<Vec<_>>();
 
                 // Also be influenced by friends
-                for &f in &self.agents[idx].friends {
+                for f in &self.agents[idx].friends {
                     if rng.gen::<f32>() < self.agents[idx].friend_influence_probability {
-                        influencers.push(f);
+                        influencers.push(f.agent);
                     }
                 }
 
@@ -292,6 +243,95 @@ impl<const M: usize> AgentCollection<M> {
                         state: influence,
                         step,
                     });
+                }
+            }
+        }
+    }
+
+    /// Checks the performance of friends and influencers based on the previous time step.
+    pub fn update_friends(&mut self, markets: &[GenoaMarket]) {
+        let market_count = markets.len();
+
+        for idx in 0..self.agents.len() {
+            // Calculate the market movements of all the markets from the previous step.
+            let market_movement = markets
+                    .iter()
+                    .map(|m| m.price() - m.price_ago(1))
+                    .collect::<Vec<_>>();
+
+            // Caculate the mean of the market movements.
+            let market_movement_mean =
+                market_movement.iter().sum::<f32>().div(market_count as f32);
+
+            // Calculate the standard deviations of the market movements.
+            let market_movement_sd = market_movement
+                .iter()
+                .map(|x| (x - market_movement_mean) * (x - market_movement_mean))
+                .sum::<f32>()
+                .div((market_count - 1) as f32)
+                .sqrt();
+
+            let agent = &mut self.agents[idx];
+            let influences = &mut agent.influences;
+
+            // Iterate over influences of the previous step for this agent.
+            while influences.front().is_some() {
+                let i = influences.pop_front().unwrap();
+
+                let influence_mean = i.state.iter().sum::<f32>().div(market_count as f32);
+
+                let influence_sd = i
+                    .state
+                    .iter()
+                    .map(|x| (x - influence_mean) * (x - influence_mean))
+                    .sum::<f32>()
+                    .div((market_count - 1) as f32)
+                    .sqrt();
+
+                // Calculate the correlation between the market movements and states of influencer.
+                let correlation = market_movement
+                    .iter()
+                    .zip(i.state.iter())
+                    .map(|(&mm, &i)| {
+                        (mm - market_movement_mean) * (i - influence_mean)
+                    })
+                    .sum::<f32>()
+                    .div(influence_sd * market_movement_sd)
+                    .div((market_count - 1) as f32);
+
+                let mut is_friend = false;
+
+                // Iterate over the agent's friends
+                for (idf, friend) in agent.friends.iter_mut().enumerate() {
+                    // Check if the current influencer is a friend.
+                    if friend.agent == i.influencer {
+                        is_friend = true;
+
+                        // Update friend score.
+                        if correlation > agent.friend_threshold {
+                            friend.score += 1
+                        } else {
+                            friend.score -= 1
+                        }
+
+                        // Remove friend if score falls below 0.
+                        if friend.score < 0 {
+                            agent.friends.remove(idf);
+                        }
+                        break;
+                    }
+                }
+
+                // If current influencer is not a friend yet, his performance is good and there is
+                // space in the friend list of the agent; Add the influencer as friend.
+                if !is_friend &&
+                    correlation > agent.friend_threshold &&
+                    agent.friends.len() < agent.max_friends
+                {
+                    agent.friends.push_back(Friend {
+                        agent: i.influencer,
+                        score: 1
+                    })
                 }
             }
         }
