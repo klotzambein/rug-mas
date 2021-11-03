@@ -5,3 +5,6 @@ target
 *.csv
 *.zip
 peer-reviews
+plots_env
+data
+plots

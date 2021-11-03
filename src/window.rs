@@ -2,11 +2,10 @@ use std::error::Error;
 use std::f32::consts::PI;
 use std::sync::Arc;
 
-use plotters::prelude::IntoDrawingArea;
 use plotters_backend::{BackendCoord, DrawingBackend, DrawingErrorKind};
 use speedy2d::color::Color;
 use speedy2d::dimen::Vector2;
-use speedy2d::font::{Font, TextAlignment, TextLayout, TextOptions};
+// use speedy2d::font::{Font, TextAlignment, TextLayout, TextOptions};
 use speedy2d::shape::Rectangle;
 use speedy2d::window::{WindowHandler, WindowHelper};
 use speedy2d::Graphics2D;
@@ -42,7 +41,7 @@ impl WindowHandler<Data> for MyWindowHandler {
 
         graphics.clear_screen(Color::WHITE);
         let window = Rect::from_size(self.size);
-        let (content_agent, content_plots) = window.inset(3.0).split_horizontal_at(1.0);
+        let (content_agent, _content_plots) = window.inset(3.0).split_horizontal_at(1.0);
 
         let agents = sim.agents().agents();
         let agent_count = agents.len();
@@ -407,37 +406,37 @@ impl DrawingBackend for PlottersBackendSpeedy<'_> {
 
     fn draw_text<TStyle: plotters_backend::BackendTextStyle>(
         &mut self,
-        text: &str,
-        style: &TStyle,
-        pos: BackendCoord,
+        _text: &str,
+        _style: &TStyle,
+        _pos: BackendCoord,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
         return Ok(());
-        let font = Font::new(include_bytes!("../Mechanical.otf")).unwrap();
-        let color = style.color();
-        let color = Color::from_rgba(
-            color.rgb.0 as f32 / 255.,
-            color.rgb.1 as f32 / 255.,
-            color.rgb.2 as f32 / 255.,
-            color.alpha as f32,
-        );
-        let text = font.layout_text(
-            text,
-            style.size() as f32,
-            TextOptions::new().with_wrap_to_width(
-                f32::MAX,
-                match style.anchor().h_pos {
-                    plotters_backend::text_anchor::HPos::Left => TextAlignment::Left,
-                    plotters_backend::text_anchor::HPos::Right => TextAlignment::Right,
-                    plotters_backend::text_anchor::HPos::Center => TextAlignment::Center,
-                },
-            ),
-        );
-        self.g.draw_text(
-            Vector2::from(pos).into_f32() + self.rect.top_left,
-            color,
-            &text,
-        );
-        Ok(())
+        // let font = Font::new(include_bytes!("../Mechanical.otf")).unwrap();
+        // let color = style.color();
+        // let color = Color::from_rgba(
+        //     color.rgb.0 as f32 / 255.,
+        //     color.rgb.1 as f32 / 255.,
+        //     color.rgb.2 as f32 / 255.,
+        //     color.alpha as f32,
+        // );
+        // let text = font.layout_text(
+        //     text,
+        //     style.size() as f32,
+        //     TextOptions::new().with_wrap_to_width(
+        //         f32::MAX,
+        //         match style.anchor().h_pos {
+        //             plotters_backend::text_anchor::HPos::Left => TextAlignment::Left,
+        //             plotters_backend::text_anchor::HPos::Right => TextAlignment::Right,
+        //             plotters_backend::text_anchor::HPos::Center => TextAlignment::Center,
+        //         },
+        //     ),
+        // );
+        // self.g.draw_text(
+        //     Vector2::from(pos).into_f32() + self.rect.top_left,
+        //     color,
+        //     &text,
+        // );
+        // Ok(())
     }
 
     fn estimate_text_size<TStyle: plotters_backend::BackendTextStyle>(

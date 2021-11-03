@@ -84,7 +84,7 @@ impl Simulation {
         //     );
         // }
 
-        // report!(reporter, "median_cash", self.agents.cash_median() as f64);
+        report!(reporter, "median_cash", self.agents.cash_median() as f64);
         // report!(reporter, "total cash", self.agents.total_cash());
         // report!(reporter, "total assets", self.agents.total_assets(0) as f64);
     }
