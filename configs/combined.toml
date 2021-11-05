@@ -5,7 +5,7 @@ initial_volatility = 0.003
 price_history_count = 20
 
 [agent]
-fundamentalist_count = 100
+fundamentalist_count = 400
 agent_count = 1000
 
 [agent.influencers_count]

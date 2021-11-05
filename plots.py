@@ -83,14 +83,14 @@ for file in os.listdir("."):
         plt.savefig("plots/{}_returns_plus_vol.png".format(file.split(".")[0]), bbox_inches='tight')
 
 
-        # Median cash
+        # Median wealth
         plt.figure()
-        plt.plot(data["median_cash"], linewidth=0.7)
+        plt.plot(data["median_wealth"], linewidth=0.7)
 
-        plt.ylabel("Median cash")
+        plt.ylabel("Median wealth")
         plt.xlabel("Time step")
         plt.grid()
-        plt.savefig("plots/{}_mcash.png".format(file.split(".")[0]), bbox_inches='tight')
+        plt.savefig("plots/{}_median_wealth.png".format(file.split(".")[0]), bbox_inches='tight')
 
         # Autocorrelation
         plt.figure()

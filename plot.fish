@@ -15,7 +15,7 @@ mkdir data
 cd data
 
 for c in ../configs/*
-    cargo run --release -- run -n 10000 -c $c --csv-write
+    cargo run --release -- run -n 100000 -c $c --csv-write
 end
 
 mkdir plots

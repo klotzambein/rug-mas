@@ -40,6 +40,7 @@ pub struct Agent<const M: usize> {
     /// Value that determines how many agents a single agent should be influenced from.
     influencers_count: usize,
 
+    #[allow(unused)]
     reflection_delay: usize,
     influences: VecDeque<Influence>,
     friend_threshold: f32,
@@ -100,6 +101,7 @@ impl<const M: usize> Agent<M> {
 pub struct Influence {
     influencer: AgentId,
     state: Vec<f32>,
+    #[allow(unused)]
     step: usize,
 }
 
@@ -179,6 +181,23 @@ impl<const M: usize> AgentCollection<M> {
         cash[cash.len() / 2]
     }
 
+    pub fn wealth_median(&self, markets: &[GenoaMarket]) -> f32 {
+        let mut wealth: Vec<_> = self
+            .agents
+            .iter()
+            .map(|a| {
+                a.cash
+                    + a.assets
+                        .iter()
+                        .zip(markets)
+                        .map(|(&a, m)| a as f32 * m.price())
+                        .sum::<f32>()
+            })
+            .collect();
+        wealth.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        wealth[wealth.len() / 2]
+    }
+
     /// Give the state of either an agent or a fundamentalist. `idx` must be in
     /// range 0 to len(agents) + len(fundamentalists)
     pub fn influence_at_market(&self, idx: usize, market: MarketId) -> f32 {
@@ -255,13 +274,12 @@ impl<const M: usize> AgentCollection<M> {
         for idx in 0..self.agents.len() {
             // Calculate the market movements of all the markets from the previous step.
             let market_movement = markets
-                    .iter()
-                    .map(|m| m.price() - m.price_ago(1))
-                    .collect::<Vec<_>>();
+                .iter()
+                .map(|m| m.price() - m.price_ago(1))
+                .collect::<Vec<_>>();
 
             // Caculate the mean of the market movements.
-            let market_movement_mean =
-                market_movement.iter().sum::<f32>().div(market_count as f32);
+            let market_movement_mean = market_movement.iter().sum::<f32>().div(market_count as f32);
 
             // Calculate the standard deviations of the market movements.
             let market_movement_sd = market_movement
@@ -292,9 +310,7 @@ impl<const M: usize> AgentCollection<M> {
                 let correlation = market_movement
                     .iter()
                     .zip(i.state.iter())
-                    .map(|(&mm, &i)| {
-                        (mm - market_movement_mean) * (i - influence_mean)
-                    })
+                    .map(|(&mm, &i)| (mm - market_movement_mean) * (i - influence_mean))
                     .sum::<f32>()
                     .div(influence_sd * market_movement_sd)
                     .div((market_count - 1) as f32);
@@ -324,13 +340,13 @@ impl<const M: usize> AgentCollection<M> {
 
                 // If current influencer is not a friend yet, his performance is good and there is
                 // space in the friend list of the agent; Add the influencer as friend.
-                if !is_friend &&
-                    correlation > agent.friend_threshold &&
-                    agent.friends.len() < agent.max_friends
+                if !is_friend
+                    && correlation > agent.friend_threshold
+                    && agent.friends.len() < agent.max_friends
                 {
                     agent.friends.push_back(Friend {
                         agent: i.influencer,
-                        score: 1
+                        score: 1,
                     })
                 }
             }
