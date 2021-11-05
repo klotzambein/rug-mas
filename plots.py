@@ -38,12 +38,12 @@ for file in os.listdir("."):
                 samples = np.abs(np.array(norm_log_rets))
                 samples.sort()
 
-                plt.scatter(samples, x, s=0.5, label="Market {}".format(m_name), c="C{}".format(m_name))
+                plt.scatter(samples, x, s=0.5, label="Market {}".format(m_name), c="C{}".format(m_name), , rasterized=True)
 
         samples_n = np.abs(norm.rvs(size=count))
         samples_n.sort()
         
-        plt.plot(samples_n, x, linewidth=0.7, c='k', label="N(0,1)")
+        plt.plot(samples_n, x, linewidth=0.7, c='k', label="N(0,1)", rasterized=True)
         plt.yscale('log')
         plt.xscale('log')
         plt.ylim([10e-5, 10e-1])
@@ -68,11 +68,11 @@ for file in os.listdir("."):
                 # ax1.plot(log_rets, label="Market {}".format(
                 #     m_name), alpha=alphas[-int(m_name)], linewidth=0.7, c="C{}".format(m_name))
                 ax1.plot(price, label="Market {}".format(
-                    m_name), alpha=alphas[-int(m_name)], linewidth=0.7, c="C{}".format(m_name))
+                    m_name), alpha=alphas[-int(m_name)], linewidth=0.7, c="C{}".format(m_name), rasterized=True)
             if "volatility" in col:
                 m_name = col.split("[")[1].split("]")[0]
                 ax2.plot(data[col], label="Market {}".format(
-                    m_name), alpha=alphas[-int(m_name)], linewidth=0.7, c="C{}".format(m_name))
+                    m_name), alpha=alphas[-int(m_name)], linewidth=0.7, c="C{}".format(m_name), rasterized=True)
 
         ax1.set_ylabel("Price")
         # ax1.set_ylabel("Return")
@@ -89,7 +89,7 @@ for file in os.listdir("."):
 
         # Median wealth
         plt.figure()
-        plt.plot(data["median_wealth"], linewidth=0.7)
+        plt.plot(data["median_wealth"], linewidth=0.7, rasterized=True)
 
         plt.ylabel("Median wealth")
         plt.xlabel("Time step")
@@ -112,10 +112,10 @@ for file in os.listdir("."):
                 ac_abs_rets = [pearsonr(np.array(abs_rets.shift(t)[t:]), np.array(abs_rets[t:]))[0] for t in tau]
                 noise_lvl = 3 / np.sqrt(len(abs_rets))
 
-                plt.plot(tau, ac_rets, linewidth=0.7, c="C{}".format(m_name))
+                plt.plot(tau, ac_rets, linewidth=0.7, c="C{}".format(m_name), rasterized=True)
 
-                plt.plot(tau, ac_abs_rets, linestyle=(0, (1, 10)), linewidth=1, c="C{}".format(int(m_name)))
-                plt.scatter(tau, ac_abs_rets, s=1.7, label="Market {}".format(m_name), c="C{}".format(int(m_name)))
+                plt.plot(tau, ac_abs_rets, linestyle=(0, (1, 10)), linewidth=1, c="C{}".format(int(m_name)), rasterized=True)
+                plt.scatter(tau, ac_abs_rets, s=1.7, label="Market {}".format(m_name), c="C{}".format(int(m_name)), rasterized=True)
 
         plt.axhline(noise_lvl, linestyle="--", c='k')
         plt.axhline(-noise_lvl, linestyle="--", c='k')
