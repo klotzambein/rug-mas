@@ -53,7 +53,7 @@ for file in os.listdir("."):
         plt.legend(bbox_to_anchor=(0, 1, 1, 0), loc="lower left",
                     mode="expand", ncol=nmbr_markets, markerscale=6)
         # plt.grid()
-        plt.savefig("plots/{}_cdf.png".format(file.split(".")[0]), bbox_inches='tight')
+        plt.savefig("plots/{}_cdf.pdf".format(file.split(".")[0]), bbox_inches='tight')
 
         # Returns and Volatility
         plt.figure()
@@ -84,7 +84,7 @@ for file in os.listdir("."):
         if nmbr_markets > 1:
             ax1.legend(bbox_to_anchor=(0, 1, 1, 0), loc="lower left",
                        mode="expand", ncol=nmbr_markets)
-        plt.savefig("plots/{}_returns_plus_vol.png".format(file.split(".")[0]), bbox_inches='tight')
+        plt.savefig("plots/{}_returns_plus_vol.pdf".format(file.split(".")[0]), bbox_inches='tight')
 
 
         # Median wealth
@@ -94,7 +94,7 @@ for file in os.listdir("."):
         plt.ylabel("Median wealth")
         plt.xlabel("Time step")
         plt.grid()
-        plt.savefig("plots/{}_median_wealth.png".format(file.split(".")[0]), bbox_inches='tight')
+        plt.savefig("plots/{}_median_wealth.pdf".format(file.split(".")[0]), bbox_inches='tight')
 
         # Autocorrelation
         plt.figure()
@@ -108,7 +108,7 @@ for file in os.listdir("."):
                 # print(rets, abs_rets)
 
                 tau = np.linspace(0, 100, 101, dtype=int)
-                ac_rets = [pearsonr(np.array(rets.shift(t)[t:]), np.array(rets[t:]))[0] for t in tau]
+                ac_rets = [pearsonr(np.array(rets.shift(t)[tö:]), np.array(rets[t:]))[0] for t in tau]
                 ac_abs_rets = [pearsonr(np.array(abs_rets.shift(t)[t:]), np.array(abs_rets[t:]))[0] for t in tau]
                 noise_lvl = 3 / np.sqrt(len(abs_rets))
 
@@ -122,11 +122,11 @@ for file in os.listdir("."):
 
         plt.xlabel(r'$\tau$')
         plt.ylabel(r'$C(\tau)$')
-        if nmbr_markets > 1:
+        if nmbr_markets > 0:
             plt.legend(bbox_to_anchor=(0, 1, 1, 0), loc="lower left",
                         mode="expand", ncol=nmbr_markets, markerscale=6)
 
-        plt.savefig("plots/{}_autocorrelation.png".format(file.split(".")[0]), bbox_inches='tight')
+        plt.savefig("plots/{}_autocorrelation.pdf".format(file.split(".")[0]), bbox_inches='tight')
 
 
         # plt.figure()
@@ -142,7 +142,7 @@ for file in os.listdir("."):
         #     plt.legend(bbox_to_anchor=(0, 1, 1, 0), loc="lower left",
         #                mode="expand", ncol=nmbr_markets)
         # plt.grid()
-        # plt.savefig("plots/{}_volatility.png".format(file.split(".")[0]))
+        # plt.savefig("plots/{}_volatility.pdf".format(file.split(".")[0]))
 
         # plt.figure()
         # for col in data.columns:
@@ -160,7 +160,7 @@ for file in os.listdir("."):
         #     plt.legend(bbox_to_anchor=(0, 1, 1, 0), loc="lower left",
         #                mode="expand", ncol=nmbr_markets)
         # plt.grid()
-        # plt.savefig("plots/{}_returns.png".format(file.split(".")[0]))
+        # plt.savefig("plots/{}_returns.pdf".format(file.split(".")[0]))
 
         # plt.figure()
         # for col in data.columns:
@@ -175,4 +175,4 @@ for file in os.listdir("."):
         #     plt.legend(bbox_to_anchor=(0, 1, 1, 0), loc="lower left",
         #                mode="expand", ncol=nmbr_markets)
         # plt.grid()
-        # plt.savefig("plots/{}_volatility.png".format(file.split(".")[0]))
+        # plt.savefig("plots/{}_volatility.pdf".format(file.split(".")[0]))
