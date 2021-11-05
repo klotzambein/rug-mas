@@ -62,16 +62,20 @@ for file in os.listdir("."):
         for col in data.columns:
             if "price" in col:
                 m_name = col.split("[")[1].split("]")[0]
-                log_rets = (data[col].shift(1) / data[col]).dropna().apply(np.log)
+                # log_rets = (data[col].shift(1) / data[col]).dropna().apply(np.log)
+                price = data[col]
 
-                ax1.plot(log_rets, label="Market {}".format(
+                # ax1.plot(log_rets, label="Market {}".format(
+                #     m_name), alpha=alphas[-int(m_name)], linewidth=0.7, c="C{}".format(m_name))
+                ax1.plot(price, label="Market {}".format(
                     m_name), alpha=alphas[-int(m_name)], linewidth=0.7, c="C{}".format(m_name))
             if "volatility" in col:
                 m_name = col.split("[")[1].split("]")[0]
                 ax2.plot(data[col], label="Market {}".format(
                     m_name), alpha=alphas[-int(m_name)], linewidth=0.7, c="C{}".format(m_name))
 
-        ax1.set_ylabel("Return")
+        ax1.set_ylabel("Price")
+        # ax1.set_ylabel("Return")
         ax1.grid()
 
         ax2.set_ylabel("Volatility")
@@ -103,7 +107,7 @@ for file in os.listdir("."):
                 abs_rets = np.abs((data[col].shift(1) - data[col]).dropna())
                 # print(rets, abs_rets)
 
-                tau = np.linspace(0, 100, 101, dtype=int)
+                tau = np.linspace(0, 20, 21, dtype=int)
                 ac_rets = [pearsonr(np.array(rets.shift(t)[t:]), np.array(rets[t:]))[0] for t in tau]
                 ac_abs_rets = [pearsonr(np.array(abs_rets.shift(t)[t:]), np.array(abs_rets[t:]))[0] for t in tau]
                 noise_lvl = 3 / np.sqrt(len(abs_rets))
