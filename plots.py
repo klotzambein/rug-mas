@@ -9,7 +9,7 @@ plt.rcParams.update({'font.size': 13})
 plt.rcParams["font.family"] = "sans-serif"
 
 for file in os.listdir("."):
-    if ".csv" in file:
+    if file.endswith(".csv"):
         data = pd.read_csv(file, header=0)
 
         nmbr_markets = 0
@@ -38,7 +38,7 @@ for file in os.listdir("."):
                 samples = np.abs(np.array(norm_log_rets))
                 samples.sort()
 
-                plt.scatter(samples, x, s=0.5, label="Market {}".format(m_name), c="C{}".format(m_name), , rasterized=True)
+                plt.scatter(samples, x, s=0.5, label="Market {}".format(m_name), c="C{}".format(m_name), rasterized=True)
 
         samples_n = np.abs(norm.rvs(size=count))
         samples_n.sort()
@@ -93,6 +93,7 @@ for file in os.listdir("."):
 
         plt.ylabel("Median wealth")
         plt.xlabel("Time step")
+        plt.xaxis.get_major_formatter().set_scientific(False)
         plt.grid()
         plt.savefig("plots/{}_median_wealth.pdf".format(file.split(".")[0]), bbox_inches='tight')
 

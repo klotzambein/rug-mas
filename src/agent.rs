@@ -271,24 +271,24 @@ impl<const M: usize> AgentCollection<M> {
     pub fn update_friends(&mut self, markets: &[GenoaMarket]) {
         let market_count = markets.len();
 
+        // Calculate the market movements of all the markets from the previous step.
+        let market_movement = markets
+            .iter()
+            .map(|m| m.price() - m.price_ago(1))
+            .collect::<Vec<_>>();
+            
+        // Caculate the mean of the market movements.
+        let market_movement_mean = market_movement.iter().sum::<f32>().div(market_count as f32);
+
+        // Calculate the standard deviations of the market movements.
+        let market_movement_sd = market_movement
+            .iter()
+            .map(|x| (x - market_movement_mean) * (x - market_movement_mean))
+            .sum::<f32>()
+            .div((market_count - 1) as f32)
+            .sqrt();
+
         for idx in 0..self.agents.len() {
-            // Calculate the market movements of all the markets from the previous step.
-            let market_movement = markets
-                .iter()
-                .map(|m| m.price() - m.price_ago(1))
-                .collect::<Vec<_>>();
-
-            // Caculate the mean of the market movements.
-            let market_movement_mean = market_movement.iter().sum::<f32>().div(market_count as f32);
-
-            // Calculate the standard deviations of the market movements.
-            let market_movement_sd = market_movement
-                .iter()
-                .map(|x| (x - market_movement_mean) * (x - market_movement_mean))
-                .sum::<f32>()
-                .div((market_count - 1) as f32)
-                .sqrt();
-
             let agent = &mut self.agents[idx];
             let influences = &mut agent.influences;
 
