@@ -108,7 +108,7 @@ for file in os.listdir("."):
                 # print(rets, abs_rets)
 
                 tau = np.linspace(0, 100, 101, dtype=int)
-                ac_rets = [pearsonr(np.array(rets.shift(t)[tö:]), np.array(rets[t:]))[0] for t in tau]
+                ac_rets = [pearsonr(np.array(rets.shift(t)[t:]), np.array(rets[t:]))[0] for t in tau]
                 ac_abs_rets = [pearsonr(np.array(abs_rets.shift(t)[t:]), np.array(abs_rets[t:]))[0] for t in tau]
                 noise_lvl = 3 / np.sqrt(len(abs_rets))
 
