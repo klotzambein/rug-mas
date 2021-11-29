@@ -93,7 +93,7 @@ for file in os.listdir("."):
 
         plt.ylabel("Median wealth")
         plt.xlabel("Time step")
-        plt.xaxis.get_major_formatter().set_scientific(False)
+        plt.ticklabel_format(scilimits=(-100,100))
         plt.grid()
         plt.savefig("plots/{}_median_wealth.pdf".format(file.split(".")[0]), bbox_inches='tight')
 
